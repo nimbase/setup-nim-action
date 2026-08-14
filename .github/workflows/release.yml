@@ -231,8 +231,52 @@ jobs:
         if: inputs.use-clue
         shell: bash
         run: |
-          cd "$HOME"
-          nimble install -y clue
+          set -eu
+          os="${{ runner.os }}"
+          arch="${{ runner.arch }}"
+          case "${os}" in
+            Linux)
+              asset="clue_linux-x86_64"; ext="tar.gz"
+              ;;
+            macOS)
+              case "${arch}" in
+                X64)   asset="clue_macos-x86_64"; ext="tar.gz" ;;
+                ARM64) asset="clue_macos-arm64";  ext="tar.gz" ;;
+                *)     echo "ERROR: unsupported macOS arch: ${arch}"; exit 1 ;;
+              esac
+              ;;
+            Windows)
+              asset="clue_windows-x86_64"; ext="zip"
+              ;;
+            *)
+              echo "ERROR: unsupported os: ${os}"; exit 1
+              ;;
+          esac
+
+          url="https://github.com/openpeeps/clue/releases/latest/download/${asset}.${ext}"
+          echo ">> downloading ${url}"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          curl -fsSL "${url}" -o "${work}/clue.${ext}"
+
+          if [[ "${ext}" == "zip" ]]; then
+            win_zip="$(cygpath -w "${work}/clue.zip")"
+            win_dest="$(cygpath -w "${work}")"
+            powershell -NoProfile -Command "Expand-Archive -Force -LiteralPath '${win_zip}' -DestinationPath '${win_dest}'"
+          else
+            tar xzf "${work}/clue.${ext}" -C "${work}"
+          fi
+
+          bin="$(find "${work}" -type f \( -name 'clue' -o -name 'clue.exe' \) | head -n 1)"
+          [[ -n "${bin}" ]] || { echo "ERROR: clue binary not found in archive"; exit 1; }
+          chmod +x "${bin}"
+          mkdir -p "$HOME/.nimble/bin"
+          target="$HOME/.nimble/bin/clue"
+          if [[ "${os}" == "Windows" ]]; then
+            target="${target}.exe"
+          fi
+          install -m 0755 "${bin}" "${target}"
+          echo "installed clue: ${target}"
 
       - name: Install dependencies
         if: inputs.deps-command != '' || inputs.use-clue

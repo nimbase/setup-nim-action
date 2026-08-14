@@ -136,7 +136,7 @@ pass `release-tag: v1.2.3`.
 | `pre-test-command` | *(empty)* | Command run before the test command |
 | `test-command` | `nimble test` | Command that runs the tests |
 | `cache` | `true` | Cache `~/.nimble` between runs |
-| `use-clue` | `false` | Use `clue install` / `clue test` (a nimble alternative) instead of nimble |
+| `use-clue` | `false` | Use `clue install` / `clue test` (a nimble alternative) instead of nimble; installs the latest prebuilt clue from openpeeps/clue releases |
 
 ## Inputs (`docs.yml`)
 
@@ -174,7 +174,7 @@ pass `release-tag: v1.2.3`.
 | `release-notes-file` | *(empty)* | Path to a release notes file |
 | `prerelease` | `false` | Mark as pre-release |
 | `draft` | `false` | Create as draft |
-| `use-clue` | `false` | Use `clue install` / `clue build` / `clue test` (a nimble alternative) instead of nimble |
+| `use-clue` | `false` | Use `clue install` / `clue build` / `clue test` (a nimble alternative) instead of nimble; installs the latest prebuilt clue from openpeeps/clue releases |
 
 ### Outputs (`release.yml`)
 
