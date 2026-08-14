@@ -31,6 +31,10 @@ on:
         description: 'Use clue (a nimble alternative) for install/test instead of nimble.'
         type: boolean
         default: false
+      pre-install-command:
+        description: 'Optional command run before installing/building the package (e.g. build a C dependency).'
+        type: string
+        default: ''
 
 jobs:
   test:
@@ -117,6 +121,11 @@ jobs:
           fi
           install -m 0755 "${bin}" "${target}"
           echo "installed clue: ${target}"
+
+      - name: Pre-install
+        if: inputs.pre-install-command != ''
+        shell: bash
+        run: ${{ inputs.pre-install-command }}
 
       - name: Install dependencies
         if: inputs.deps-command != '' || inputs.use-clue
