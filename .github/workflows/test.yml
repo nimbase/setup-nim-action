@@ -69,7 +69,10 @@ jobs:
 
       - name: Install clue
         if: inputs.use-clue
-        run: nimble install clue
+        shell: bash
+        run: |
+          cd "$HOME"
+          nimble install -y clue
 
       - name: Install dependencies
         if: inputs.deps-command != '' || inputs.use-clue
