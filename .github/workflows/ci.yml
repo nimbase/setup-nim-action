@@ -1,7 +1,17 @@
 name: ci
 on:
   push:
+    paths-ignore:
+      - LICENSE
+      - README.*
+      - 'examples/**'
+      - '**/*.md'
   pull_request:
+    paths-ignore:
+      - LICENSE
+      - README.*
+      - 'examples/**'
+      - '**/*.md'
   workflow_dispatch:
 
 jobs:
