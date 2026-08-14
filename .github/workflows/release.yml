@@ -84,6 +84,89 @@ on:
         description: 'Create the release as a draft.'
         type: boolean
         default: false
+  workflow_dispatch:
+    inputs:
+      app-name:
+        description: 'Name of the application/binary being released (required).'
+        required: true
+        type: string
+      nim-version:
+        description: 'Nim version used to build the release.'
+        type: string
+        default: 'stable'
+      nim-install-directory:
+        description: 'Directory (relative to the workspace) where Nim is installed.'
+        type: string
+        default: '.nim_runtime'
+      target-matrix:
+        description: 'JSON array of {os, arch} targets to build for.'
+        type: string
+        default: >-
+          [{"os":"ubuntu-latest","arch":"x86_64"},{"os":"macos-14","arch":"arm64"},{"os":"macos-15-intel","arch":"x86_64"},{"os":"windows-latest","arch":"x86_64"}]
+      checkout:
+        description: 'Check out the repository before building.'
+        type: boolean
+        default: true
+      cache:
+        description: 'Cache ~/.nimble and the Nim installation across runs.'
+        type: boolean
+        default: true
+      deps-command:
+        description: 'Command that installs the package dependencies.'
+        type: string
+        default: 'nimble install -y --depsOnly'
+      build-command:
+        description: 'Command that builds the release binary.'
+        type: string
+        default: 'nimble build -y'
+      test-command:
+        description: 'Optional command that runs the package tests before packaging.'
+        type: string
+        default: ''
+      binary:
+        description: 'Path to the built binary. Defaults to `bin/<app-name>` (.exe on Windows).'
+        type: string
+        default: ''
+      extra-files:
+        description: 'Space separated extra files to include in the archive (e.g. LICENSE README.md).'
+        type: string
+        default: 'LICENSE README.md'
+      archive-type:
+        description: 'Archive format: auto (tar.gz unix / zip windows), tar.gz, zip or both.'
+        type: string
+        default: 'auto'
+      archive-name:
+        description: 'Archive base name. Defaults to `<app-name>_<os>-<arch>` (lowercased).'
+        type: string
+        default: ''
+      create-release:
+        description: 'Create a GitHub release (on tag push, or when release-tag is set).'
+        type: boolean
+        default: true
+      release-tag:
+        description: 'Create the release with this tag, e.g. for manual workflow_dispatch releases.'
+        type: string
+        default: ''
+      release-title:
+        description: 'Release title. Defaults to the tag name.'
+        type: string
+        default: ''
+      release-notes:
+        description: 'Release notes (single line). Prefer release-notes-file for multi-line notes.'
+        type: string
+        default: ''
+      release-notes-file:
+        description: 'Path to a file containing the release notes.'
+        type: string
+        default: ''
+      prerelease:
+        description: 'Mark the release as a pre-release.'
+        type: boolean
+        default: false
+      draft:
+        description: 'Create the release as a draft.'
+        type: boolean
+        default: false
     outputs:
       release-url:
         description: 'URL of the created GitHub release.'
