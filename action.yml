@@ -1,0 +1,94 @@
+name: 'Setup Nim environment'
+description: >-
+  Set up a Nim environment and add it to the PATH. Prefers prebuilt binaries
+  from nim-lang.org, falls back to Homebrew (macOS) and builds from source
+  when no prebuilt is available.
+author: 'nimbase'
+branding:
+  icon: 'code'
+  color: 'yellow'
+
+inputs:
+  nim-version:
+    description: >-
+      The Nim version to install and use. Accepts an exact version
+      (e.g. '2.2.10'), 'stable', or a version range (e.g. '2.x', '1.6.x').
+    default: 'stable'
+  nim-install-directory:
+    description: 'The directory (relative to the workspace) where Nim will be installed.'
+    default: '.nim_runtime'
+  repo-token:
+    description: >-
+      [Optional] The GITHUB_TOKEN secret. Accepted for compatibility with
+      older workflows; the action does not require it.
+    default: ''
+
+outputs:
+  nim-version:
+    description: 'The resolved, exact Nim version that was installed.'
+    value: ${{ steps.install.outputs.nim-version }}
+  nim-version-full:
+    description: 'The full first line of `nim --version`.'
+    value: ${{ steps.verify.outputs.nim-version-full }}
+  nimble-version:
+    description: 'The full first line of `nimble --version`.'
+    value: ${{ steps.verify.outputs.nimble-version }}
+  nim-install-directory:
+    description: 'Absolute path to the installed Nim directory.'
+    value: ${{ steps.install.outputs.nim-install-directory }}
+  nim-path:
+    description: 'Absolute path to the `nim` binary.'
+    value: ${{ steps.verify.outputs.nim-path }}
+  nimble-path:
+    description: 'Absolute path to the `nimble` binary.'
+    value: ${{ steps.verify.outputs.nimble-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: install
+      name: Install Nim
+      shell: bash
+      run: |
+        "${{ github.action_path }}/install_nim.sh" \
+          --nim-version "${{ inputs.nim-version }}" \
+          --nim-install-directory "${{ inputs.nim-install-directory }}" \
+          --os "${{ runner.os }}" \
+          --repo-token "${{ inputs.repo-token }}"
+
+        install_dir="${GITHUB_WORKSPACE}/${{ inputs.nim-install-directory }}"
+        if [[ -f "${install_dir}/.nim-version" ]]; then
+          echo "nim-version=$(cat "${install_dir}/.nim-version")" >> "$GITHUB_OUTPUT"
+        fi
+        echo "nim-install-directory=${install_dir}" >> "$GITHUB_OUTPUT"
+
+    - name: Set PATH for Unix
+      shell: bash
+      run: |
+        echo "${GITHUB_WORKSPACE}/${{ inputs.nim-install-directory }}/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.nimble/bin" >> "$GITHUB_PATH"
+      if: runner.os != 'Windows'
+
+    - name: Set PATH for Windows
+      shell: pwsh
+      run: |
+        echo "$env:GITHUB_WORKSPACE\${{ inputs.nim-install-directory }}\bin" >> $Env:GITHUB_PATH
+        New-Item -ItemType Directory -Force -Path "$HOME\.nimble\bin" | Out-Null
+        echo "$HOME\.nimble\bin" >> $Env:GITHUB_PATH
+      if: runner.os == 'Windows'
+
+    - id: verify
+      name: Verify Nim
+      shell: bash
+      run: |
+        set -eu
+        nim_version_full="$(nim --version | head -n 1)"
+        nimble_version="$(nimble --version | head -n 1)"
+        echo "nim-version-full=${nim_version_full}" >> "$GITHUB_OUTPUT"
+        echo "nimble-version=${nimble_version}" >> "$GITHUB_OUTPUT"
+        echo "nim-path=$(which nim)" >> "$GITHUB_OUTPUT"
+        echo "nimble-path=$(which nimble)" >> "$GITHUB_OUTPUT"
+        echo "installed nim fullpath: $(which nim)"
+        echo "installed nimble fullpath: $(which nimble)"
+        nim --version
+        nimble --version

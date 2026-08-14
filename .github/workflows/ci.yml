@@ -1,0 +1,67 @@
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    name: setup (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-14, macos-15-intel]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./
+        with:
+          nim-version: stable
+
+      - run: nim -v
+      - run: nimble -v
+      - run: nim c -r --hints:off sample.nim
+      - run: |
+          test -n "$(which nim)"
+          test -n "$(which nimble)"
+
+  range:
+    name: version range (2.x)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          nim-version: 2.x
+      - run: nim -v
+
+  reusable-test:
+    name: reusable test workflow
+    uses: ./.github/workflows/test.yml
+    with:
+      os: '[{"os":"ubuntu-latest"},{"os":"macos-15"}]'
+
+  source-build:
+    name: source build (linux arm64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          nim-version: 2.0.4
+      - run: nim -v
+      - run: nimble -v
+
+  slow-paths:
+    name: slow paths (macOS source build)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          nim-version: 1.6.20
+      - run: nim -v

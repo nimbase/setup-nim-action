@@ -1,0 +1,10 @@
+.DS_Store
+.nim_runtime/
+Nim-src/
+.nimble/
+nimcache/
+*.nim.c
+*.nim.js
+sample
+sample.exe
+dist/

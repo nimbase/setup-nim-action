@@ -1,0 +1,276 @@
+name: release (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: 'Name of the application/binary being released (required).'
+        type: string
+        required: true
+      nim-version:
+        description: 'Nim version used to build the release.'
+        type: string
+        default: 'stable'
+      nim-install-directory:
+        description: 'Directory (relative to the workspace) where Nim is installed.'
+        type: string
+        default: '.nim_runtime'
+      target-matrix:
+        description: 'JSON array of {os, arch} targets to build for.'
+        type: string
+        default: >-
+          [{"os":"ubuntu-latest","arch":"x86_64"},{"os":"macos-14","arch":"arm64"},{"os":"macos-15-intel","arch":"x86_64"},{"os":"windows-latest","arch":"x86_64"}]
+      checkout:
+        description: 'Check out the repository before building.'
+        type: boolean
+        default: true
+      cache:
+        description: 'Cache ~/.nimble and the Nim installation across runs.'
+        type: boolean
+        default: true
+      deps-command:
+        description: 'Command that installs the package dependencies.'
+        type: string
+        default: 'nimble install -y --depsOnly'
+      build-command:
+        description: 'Command that builds the release binary.'
+        type: string
+        default: 'nimble build -y'
+      test-command:
+        description: 'Optional command that runs the package tests before packaging.'
+        type: string
+        default: ''
+      binary:
+        description: 'Path to the built binary. Defaults to `bin/<app-name>` (.exe on Windows).'
+        type: string
+        default: ''
+      extra-files:
+        description: 'Space separated extra files to include in the archive (e.g. LICENSE README.md).'
+        type: string
+        default: 'LICENSE README.md'
+      archive-type:
+        description: 'Archive format: auto (tar.gz unix / zip windows), tar.gz, zip or both.'
+        type: string
+        default: 'auto'
+      archive-name:
+        description: 'Archive base name. Defaults to `<app-name>_<os>-<arch>` (lowercased).'
+        type: string
+        default: ''
+      create-release:
+        description: 'Create a GitHub release (on tag push, or when release-tag is set).'
+        type: boolean
+        default: true
+      release-tag:
+        description: 'Create the release with this tag, e.g. for manual workflow_dispatch releases.'
+        type: string
+        default: ''
+      release-title:
+        description: 'Release title. Defaults to the tag name.'
+        type: string
+        default: ''
+      release-notes:
+        description: 'Release notes (single line). Prefer release-notes-file for multi-line notes.'
+        type: string
+        default: ''
+      release-notes-file:
+        description: 'Path to a file containing the release notes.'
+        type: string
+        default: ''
+      prerelease:
+        description: 'Mark the release as a pre-release.'
+        type: boolean
+        default: false
+      draft:
+        description: 'Create the release as a draft.'
+        type: boolean
+        default: false
+    outputs:
+      release-url:
+        description: 'URL of the created GitHub release.'
+        value: ${{ jobs.release.outputs.release-url }}
+      nim-version:
+        description: 'The resolved Nim version used for the build.'
+        value: ${{ jobs.build.outputs.nim-version }}
+
+jobs:
+  build:
+    name: build (${{ matrix.os }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.target-matrix) }}
+    outputs:
+      nim-version: ${{ steps.setup.outputs.nim-version }}
+    steps:
+      - name: Checkout
+        if: inputs.checkout
+        uses: actions/checkout@v4
+
+      - name: Cache nimble and Nim
+        if: inputs.cache && runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nimble
+            ${{ inputs.nim-install-directory }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-
+            ${{ runner.os }}-${{ matrix.arch }}-nim-cache-
+
+      - id: setup
+        name: Setup Nim
+        uses: $/
+        with:
+          nim-version: ${{ inputs.nim-version }}
+          nim-install-directory: ${{ inputs.nim-install-directory }}
+
+      - name: Install dependencies
+        if: inputs.deps-command != ''
+        run: ${{ inputs.deps-command }}
+
+      - name: Test
+        if: inputs.test-command != ''
+        run: ${{ inputs.test-command }}
+
+      - name: Build
+        run: ${{ inputs.build-command }}
+
+      - name: Create artifact
+        shell: bash
+        run: |
+          set -eu
+          app="${{ inputs.app-name }}"
+          os="${{ runner.os }}"
+          arch="${{ matrix.arch }}"
+
+          binary="${{ inputs.binary }}"
+          if [[ -z "${binary}" ]]; then
+            binary="bin/${app}"
+            if [[ "${os}" == "Windows" ]]; then
+              binary="bin/${app}.exe"
+            fi
+          fi
+          [[ -f "${binary}" ]] || { echo "ERROR: binary not found: ${binary}"; exit 1; }
+
+          archive_name="${{ inputs.archive-name }}"
+          if [[ -z "${archive_name}" ]]; then
+            suffix="$(echo "${os}-${arch}" | tr '[:upper:]' '[:lower:]')"
+            archive_name="${app}_${suffix}"
+          fi
+
+          dist="dist/${archive_name}"
+          mkdir -p "${dist}"
+          files="${binary} ${{ inputs.extra-files }}"
+          for f in ${files}; do
+            if [[ -f "${f}" ]]; then
+              cp "${f}" "${dist}/"
+            else
+              echo "WARNING: file not found, skipping: ${f}"
+            fi
+          done
+
+          archive_type="${{ inputs.archive-type }}"
+          if [[ "${archive_type}" == "auto" ]]; then
+            if [[ "${os}" == "Windows" ]]; then
+              archive_type="zip"
+            else
+              archive_type="tar.gz"
+            fi
+          fi
+          case "${archive_type}" in
+            tar.gz)
+              (cd dist && tar czf "${archive_name}.tar.gz" "${archive_name}")
+              ;;
+            zip)
+              if [[ "${os}" == "Windows" ]]; then
+                powershell -NoProfile -Command "Compress-Archive -Force -Path 'dist/${archive_name}' -DestinationPath 'dist/${archive_name}.zip'"
+              else
+                (cd dist && zip -r "${archive_name}.zip" "${archive_name}")
+              fi
+              ;;
+            both)
+              (cd dist && tar czf "${archive_name}.tar.gz" "${archive_name}")
+              if [[ "${os}" == "Windows" ]]; then
+                powershell -NoProfile -Command "Compress-Archive -Force -Path 'dist/${archive_name}' -DestinationPath 'dist/${archive_name}.zip'"
+              else
+                (cd dist && zip -r "${archive_name}.zip" "${archive_name}")
+              fi
+              ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifact-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: inputs.create-release && (github.ref_type == 'tag' || inputs.release-tag != '')
+    permissions:
+      contents: write
+    outputs:
+      release-url: ${{ steps.create.outputs.release-url }}
+    steps:
+      - name: Checkout
+        if: inputs.release-notes-file != ''
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: artifact-*
+          path: dist
+          merge-multiple: true
+
+      - id: create
+        name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          RELEASE_TITLE: ${{ inputs.release-title }}
+          RELEASE_NOTES: ${{ inputs.release-notes }}
+          RELEASE_NOTES_FILE: ${{ inputs.release-notes-file }}
+        shell: bash
+        run: |
+          set -eu
+          shopt -s nullglob
+
+          tag="${RELEASE_TAG}"
+          if [[ -z "${tag}" ]]; then
+            tag="${{ github.ref_name }}"
+          fi
+
+          title="${RELEASE_TITLE}"
+          if [[ -z "${title}" ]]; then
+            title="${tag}"
+          fi
+
+          args=(gh release create "${tag}" --title "${title}")
+          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
+            args+=(--prerelease)
+          fi
+          if [[ "${{ inputs.draft }}" == "true" ]]; then
+            args+=(--draft)
+          fi
+          if [[ -n "${RELEASE_NOTES}" ]]; then
+            args+=(--notes "${RELEASE_NOTES}")
+          elif [[ -n "${RELEASE_NOTES_FILE}" ]]; then
+            args+=(--notes-file "${RELEASE_NOTES_FILE}")
+          else
+            args+=(--generate-notes)
+          fi
+
+          assets=(dist/*.tar.gz dist/*.zip)
+          if (( ${#assets[@]} == 0 )); then
+            echo "ERROR: no archives found in dist/"
+            exit 1
+          fi
+          args+=("${assets[@]}")
+
+          echo ">> Running: ${args[*]}"
+          "${args[@]}"
+
+          echo "release-url=https://github.com/${{ github.repository }}/releases/tag/${tag}" >> "$GITHUB_OUTPUT"

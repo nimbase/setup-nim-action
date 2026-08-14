@@ -1,0 +1,89 @@
+name: docs (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      nim-version:
+        description: 'Nim version used to generate the docs.'
+        type: string
+        default: 'stable'
+      nim-src:
+        description: >-
+          Path to the main module, e.g. `src/myproject.nim`. If empty,
+          defaults to `src/<repository-name>.nim`.
+        type: string
+        default: ''
+      deploy-dir:
+        description: 'Directory where the generated HTML docs are written.'
+        type: string
+        default: '.gh-pages'
+      deps-command:
+        description: 'Command that installs the package dependencies.'
+        type: string
+        default: 'nimble install -Y'
+      doc-command:
+        description: >-
+          Full doc generation command. Defaults to
+          `nim doc --index:on --project --path:. --out:<deploy-dir> <nim-src>`.
+        type: string
+        default: ''
+      deploy:
+        description: 'Deploy the generated docs to the publish branch.'
+        type: boolean
+        default: true
+      publish-branch:
+        description: 'Branch the docs are deployed to (gh-pages).'
+        type: string
+        default: 'gh-pages'
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: $/
+        with:
+          nim-version: ${{ inputs.nim-version }}
+
+      - name: Install dependencies
+        if: inputs.deps-command != ''
+        run: ${{ inputs.deps-command }}
+
+      - name: Generate docs
+        env:
+          DEPLOY_DIR: ${{ inputs.deploy-dir }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          NIM_SRC: ${{ inputs.nim-src }}
+          DOC_CMD: ${{ inputs.doc-command }}
+        shell: bash
+        run: |
+          set -eu
+          nim_src="${NIM_SRC}"
+          if [[ -z "${nim_src}" ]]; then
+            nim_src="src/${REPO_NAME}.nim"
+          fi
+          doc_cmd="${DOC_CMD}"
+          if [[ -z "${doc_cmd}" ]]; then
+            doc_cmd="nim doc --index:on --project --path:. --out:${DEPLOY_DIR} ${nim_src}"
+          fi
+          echo ">> Running: ${doc_cmd}"
+          eval "${doc_cmd}"
+
+          main_html="${DEPLOY_DIR}/${REPO_NAME}.html"
+          if [[ -f "${main_html}" ]]; then
+            mv "${main_html}" "${DEPLOY_DIR}/index.html"
+            esc="$(printf '%s' "${REPO_NAME}" | sed 's/[.[\*^$]/\\&/g')"
+            sed -i "s/${esc}\.html/index.html/g" "${DEPLOY_DIR}/index.html"
+            sed -i "s/${esc}\.html/index.html/g" "${DEPLOY_DIR}/theindex.html" || true
+          fi
+
+      - name: Deploy to GitHub Pages
+        if: inputs.deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ inputs.deploy-dir }}
+          publish_branch: ${{ inputs.publish-branch }}
