@@ -27,6 +27,10 @@ on:
         description: 'Cache the ~/.nimble directory across runs.'
         type: boolean
         default: true
+      use-clue:
+        description: 'Use clue (a nimble alternative) for install/test instead of nimble.'
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -53,13 +57,39 @@ jobs:
             ${{ runner.os }}-nim-${{ inputs.nim-version }}-nimble-
             ${{ runner.os }}-nimble-
 
+      - name: Cache clue
+        if: inputs.use-clue && inputs.cache && runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.clue
+          key: ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-
+            ${{ runner.os }}-nim-clue-
+
+      - name: Install clue
+        if: inputs.use-clue
+        run: nimble install clue
+
       - name: Install dependencies
-        if: inputs.deps-command != ''
-        run: ${{ inputs.deps-command }}
+        if: inputs.deps-command != '' || inputs.use-clue
+        shell: bash
+        run: |
+          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
+            clue install
+          else
+            ${{ inputs.deps-command }}
+          fi
 
       - name: Pre-test
         if: inputs.pre-test-command != ''
         run: ${{ inputs.pre-test-command }}
 
       - name: Test
-        run: ${{ inputs.test-command }}
+        shell: bash
+        run: |
+          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
+            clue test
+          else
+            ${{ inputs.test-command }}
+          fi

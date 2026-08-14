@@ -84,6 +84,10 @@ on:
         description: 'Create the release as a draft.'
         type: boolean
         default: false
+      use-clue:
+        description: 'Use clue (a nimble alternative) for install/build/test instead of nimble.'
+        type: boolean
+        default: false
     outputs:
       release-url:
         description: 'URL of the created GitHub release.'
@@ -174,6 +178,10 @@ on:
         description: 'Create the release as a draft.'
         type: boolean
         default: false
+      use-clue:
+        description: 'Use clue (a nimble alternative) for install/build/test instead of nimble.'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -202,6 +210,16 @@ jobs:
             ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-
             ${{ runner.os }}-${{ matrix.arch }}-nim-cache-
 
+      - name: Cache clue
+        if: inputs.use-clue && inputs.cache && runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.clue
+          key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-clue-
+            ${{ runner.os }}-${{ matrix.arch }}-nim-clue-
+
       - id: setup
         name: Setup Nim
         uses: $/
@@ -209,16 +227,38 @@ jobs:
           nim-version: ${{ inputs.nim-version }}
           nim-install-directory: ${{ inputs.nim-install-directory }}
 
+      - name: Install clue
+        if: inputs.use-clue
+        run: nimble install clue
+
       - name: Install dependencies
-        if: inputs.deps-command != ''
-        run: ${{ inputs.deps-command }}
+        if: inputs.deps-command != '' || inputs.use-clue
+        shell: bash
+        run: |
+          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
+            clue install
+          else
+            ${{ inputs.deps-command }}
+          fi
 
       - name: Test
-        if: inputs.test-command != ''
-        run: ${{ inputs.test-command }}
+        if: inputs.test-command != '' || inputs.use-clue
+        shell: bash
+        run: |
+          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
+            clue test
+          else
+            ${{ inputs.test-command }}
+          fi
 
       - name: Build
-        run: ${{ inputs.build-command }}
+        shell: bash
+        run: |
+          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
+            clue build
+          else
+            ${{ inputs.build-command }}
+          fi
 
       - name: Create artifact
         shell: bash
