@@ -84,6 +84,13 @@ on:
         description: 'Create the release as a draft.'
         type: boolean
         default: false
+    outputs:
+      release-url:
+        description: 'URL of the created GitHub release.'
+        value: ${{ jobs.release.outputs.release-url }}
+      nim-version:
+        description: 'The resolved Nim version used for the build.'
+        value: ${{ jobs.build.outputs.nim-version }}
   workflow_dispatch:
     inputs:
       app-name:
@@ -167,13 +174,6 @@ on:
         description: 'Create the release as a draft.'
         type: boolean
         default: false
-    outputs:
-      release-url:
-        description: 'URL of the created GitHub release.'
-        value: ${{ jobs.release.outputs.release-url }}
-      nim-version:
-        description: 'The resolved Nim version used for the build.'
-        value: ${{ jobs.build.outputs.nim-version }}
 
 jobs:
   build:
