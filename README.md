@@ -163,7 +163,8 @@ pass `release-tag: v1.2.3`.
 | `deps-command` | `nimble install -y --depsOnly` | Dependency install command |
 | `build-command` | `nimble build -y` | Build command |
 | `test-command` | *(empty)* | Optional test command before packaging |
-| `binary` | *(auto)* | Path to the built binary (`bin/<app-name>`, `.exe` on Windows) |
+| `bin-directory` | `bin` | Directory (relative to workspace) holding the built binary |
+| `binary` | *(auto)* | Path to the built binary (`<bin-directory>/<app-name>`, `.exe` on Windows) |
 | `extra-files` | `LICENSE README.md` | Extra files copied into the archive |
 | `archive-type` | `auto` | `auto`, `tar.gz`, `zip`, or `both` |
 | `archive-name` | *(auto)* | Archive base name (`<app-name>_<os>-<arch>`) |
