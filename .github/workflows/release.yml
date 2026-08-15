@@ -385,8 +385,10 @@ jobs:
     outputs:
       release-url: ${{ steps.create.outputs.release-url }}
     steps:
+      # `gh release create` needs a git repository to resolve the target repo,
+      # so the workspace is always checked out here — not just when a
+      # release-notes-file is provided.
       - name: Checkout
-        if: inputs.release-notes-file != ''
         uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
