@@ -40,8 +40,12 @@ on:
         description: 'Optional command that runs the package tests before packaging.'
         type: string
         default: ''
+      bin-directory:
+        description: 'Directory (relative to the workspace) containing the built binary. Used for the default `binary` path.'
+        type: string
+        default: 'bin'
       binary:
-        description: 'Path to the built binary. Defaults to `bin/<app-name>` (.exe on Windows).'
+        description: 'Path to the built binary. Defaults to `<bin-directory>/<app-name>` (.exe on Windows).'
         type: string
         default: ''
       extra-files:
@@ -134,8 +138,12 @@ on:
         description: 'Optional command that runs the package tests before packaging.'
         type: string
         default: ''
+      bin-directory:
+        description: 'Directory (relative to the workspace) containing the built binary. Used for the default `binary` path.'
+        type: string
+        default: 'bin'
       binary:
-        description: 'Path to the built binary. Defaults to `bin/<app-name>` (.exe on Windows).'
+        description: 'Path to the built binary. Defaults to `<bin-directory>/<app-name>` (.exe on Windows).'
         type: string
         default: ''
       extra-files:
@@ -323,9 +331,9 @@ jobs:
 
           binary="${{ inputs.binary }}"
           if [[ -z "${binary}" ]]; then
-            binary="bin/${app}"
+            binary="${{ inputs.bin-directory }}/${app}"
             if [[ "${os}" == "Windows" ]]; then
-              binary="bin/${app}.exe"
+              binary="${{ inputs.bin-directory }}/${app}.exe"
             fi
           fi
           [[ -f "${binary}" ]] || { echo "ERROR: binary not found: ${binary}"; exit 1; }
