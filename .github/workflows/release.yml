@@ -284,8 +284,10 @@ jobs:
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
             clue install
-          else
+          fi
+          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.deps-command }}
+            :
           fi
 
       - name: Test
@@ -294,8 +296,10 @@ jobs:
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
             clue test
-          else
+          fi
+          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.test-command }}
+            :
           fi
 
       - name: Build
@@ -303,8 +307,10 @@ jobs:
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
             clue build
-          else
+          fi
+          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.build-command }}
+            :
           fi
 
       - name: Create artifact

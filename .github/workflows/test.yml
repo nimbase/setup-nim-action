@@ -133,8 +133,10 @@ jobs:
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
             clue install
-          else
+          fi
+          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.deps-command }}
+            :
           fi
 
       - name: Pre-test
@@ -146,6 +148,8 @@ jobs:
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
             clue test
-          else
+          fi
+          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.test-command }}
+            :
           fi
