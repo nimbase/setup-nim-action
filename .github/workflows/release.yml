@@ -291,7 +291,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
-            clue install
+            clue install --verbose
           fi
           if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.deps-command }}
@@ -314,7 +314,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
-            clue build
+            clue build --verbose
           fi
           if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.build-command }}
