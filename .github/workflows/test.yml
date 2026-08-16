@@ -11,8 +11,8 @@ on:
         description: 'JSON array of {os} objects describing the runner matrix.'
         type: string
         default: '[{"os":"ubuntu-latest"},{"os":"windows-latest"},{"os":"macos-15"}]'
-      deps-command:
-        description: 'Command that installs the package dependencies.'
+      install-command:
+        description: 'Command that installs the package dependencies. Overrides the default nimble command when set (e.g. a clue command).'
         type: string
         default: 'nimble install -Y'
       pre-test-command:
@@ -20,17 +20,13 @@ on:
         type: string
         default: ''
       test-command:
-        description: 'Command that runs the package tests.'
+        description: 'Command that runs the package tests. Overrides the default nimble command when set (e.g. a clue command).'
         type: string
         default: 'nimble test'
       cache:
         description: 'Cache the ~/.nimble directory across runs.'
         type: boolean
         default: true
-      use-clue:
-        description: 'Use clue (a nimble alternative) for install/test instead of nimble.'
-        type: boolean
-        default: false
       pre-install-command:
         description: 'Optional command run before installing/building the package (e.g. build a C dependency).'
         type: string
@@ -61,83 +57,15 @@ jobs:
             ${{ runner.os }}-nim-${{ inputs.nim-version }}-nimble-
             ${{ runner.os }}-nimble-
 
-      - name: Cache clue
-        if: inputs.use-clue && inputs.cache && runner.os != 'Windows'
-        uses: actions/cache@v4
-        with:
-          path: ~/.clue
-          key: ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-
-            ${{ runner.os }}-nim-clue-
-
-      - name: Install clue
-        if: inputs.use-clue
-        shell: bash
-        run: |
-          set -eu
-          os="${{ runner.os }}"
-          arch="${{ runner.arch }}"
-          case "${os}" in
-            Linux)
-              asset="clue_linux-x86_64"; ext="tar.gz"
-              ;;
-            macOS)
-              case "${arch}" in
-                X64)   asset="clue_macos-x86_64"; ext="tar.gz" ;;
-                ARM64) asset="clue_macos-arm64";  ext="tar.gz" ;;
-                *)     echo "ERROR: unsupported macOS arch: ${arch}"; exit 1 ;;
-              esac
-              ;;
-            Windows)
-              asset="clue_windows-x86_64"; ext="zip"
-              ;;
-            *)
-              echo "ERROR: unsupported os: ${os}"; exit 1
-              ;;
-          esac
-
-          url="https://github.com/openpeeps/clue/releases/latest/download/${asset}.${ext}"
-          echo ">> downloading ${url}"
-          work="$(mktemp -d)"
-          trap 'rm -rf "$work"' EXIT
-          curl -fsSL "${url}" -o "${work}/clue.${ext}"
-
-          if [[ "${ext}" == "zip" ]]; then
-            win_zip="$(cygpath -w "${work}/clue.zip")"
-            win_dest="$(cygpath -w "${work}")"
-            powershell -NoProfile -Command "Expand-Archive -Force -LiteralPath '${win_zip}' -DestinationPath '${win_dest}'"
-          else
-            tar xzf "${work}/clue.${ext}" -C "${work}"
-          fi
-
-          bin="$(find "${work}" -type f \( -name 'clue' -o -name 'clue.exe' \) | head -n 1)"
-          [[ -n "${bin}" ]] || { echo "ERROR: clue binary not found in archive"; exit 1; }
-          chmod +x "${bin}"
-          mkdir -p "$HOME/.nimble/bin"
-          target="$HOME/.nimble/bin/clue"
-          if [[ "${os}" == "Windows" ]]; then
-            target="${target}.exe"
-          fi
-          install -m 0755 "${bin}" "${target}"
-          echo "installed clue: ${target}"
-
       - name: Pre-install
         if: inputs.pre-install-command != ''
         shell: bash
         run: ${{ inputs.pre-install-command }}
 
       - name: Install dependencies
-        if: inputs.deps-command != '' || inputs.use-clue
+        if: inputs.install-command != ''
         shell: bash
-        run: |
-          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
-            clue install
-          fi
-          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
-            ${{ inputs.deps-command }}
-            :
-          fi
+        run: ${{ inputs.install-command }}
 
       - name: Pre-test
         if: inputs.pre-test-command != ''
@@ -145,11 +73,4 @@ jobs:
 
       - name: Test
         shell: bash
-        run: |
-          if [[ "${{ inputs.use-clue }}" == "true" ]]; then
-            clue test
-          fi
-          if [[ "${{ inputs.use-clue }}" != "true" ]]; then
-            ${{ inputs.test-command }}
-            :
-          fi
+        run: ${{ inputs.test-command }}

@@ -132,11 +132,10 @@ pass `release-tag: v1.2.3`.
 | --- | --- | --- |
 | `nim-version` | `stable` | Nim version to test against |
 | `os` | `[{"os":"ubuntu-latest"},{"os":"windows-latest"},{"os":"macos-15"}]` | JSON array of `{os}` objects |
-| `deps-command` | `nimble install -Y` | Installs dependencies (empty to skip) |
+| `install-command` | `nimble install -Y` | Installs dependencies (empty to skip). Override to use another tool (e.g. `clue install`) |
 | `pre-test-command` | *(empty)* | Command run before the test command |
-| `test-command` | `nimble test` | Command that runs the tests |
+| `test-command` | `nimble test` | Command that runs the tests. Override to use another tool (e.g. `clue test`) |
 | `cache` | `true` | Cache `~/.nimble` between runs |
-| `use-clue` | `false` | Use `clue install` / `clue test` (a nimble alternative) instead of nimble; installs the latest prebuilt clue from openpeeps/clue releases |
 
 ## Inputs (`docs.yml`)
 
@@ -160,8 +159,8 @@ pass `release-tag: v1.2.3`.
 | `target-matrix` | 4-runner set (see above) | JSON array of `{os, arch}` |
 | `checkout` | `true` | Check out the repository |
 | `cache` | `true` | Cache `~/.nimble` + Nim install |
-| `deps-command` | `nimble install -y --depsOnly` | Dependency install command |
-| `build-command` | `nimble build -y` | Build command |
+| `install-command` | `nimble install -y --depsOnly` | Dependency install command. Override to use another tool (e.g. `clue install`) |
+| `build-command` | `nimble build -y` | Build command. Override to use another tool (e.g. `clue build --release`) |
 | `test-command` | *(empty)* | Optional test command before packaging |
 | `bin-directory` | `bin` | Directory (relative to workspace) holding the built binary |
 | `binary` | *(auto)* | Path to the built binary (`<bin-directory>/<app-name>`, `.exe` on Windows) |
@@ -175,7 +174,6 @@ pass `release-tag: v1.2.3`.
 | `release-notes-file` | *(empty)* | Path to a release notes file |
 | `prerelease` | `false` | Mark as pre-release |
 | `draft` | `false` | Create as draft |
-| `use-clue` | `false` | Use `clue install` / `clue build` / `clue test` (a nimble alternative) instead of nimble; installs the latest prebuilt clue from openpeeps/clue releases |
 
 ### Outputs (`release.yml`)
 
