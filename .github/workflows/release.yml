@@ -201,13 +201,13 @@ jobs:
           nim-version: ${{ inputs.nim-version }}
           nim-install-directory: ${{ inputs.nim-install-directory }}
 
-      - name: Install OpenSSL (macOS arm64)
-        if: runner.os == 'macOS' && runner.arch == 'ARM64'
+      - name: Install OpenSSL (macOS)
+        if: runner.os == 'macOS'
         shell: bash
         run: |
           set -eu
-          # macOS no longer ships a linkable system libssl (removed from the SDK
-          # on arm64), so point clang at the keg-only Homebrew OpenSSL. This is a
+          # macOS no longer ships a linkable system libssl (removed from the
+          # SDK), so point clang at the keg-only Homebrew OpenSSL. This is a
           # no-op on runners where openssl@3 is already installed.
           brew list openssl@3 >/dev/null 2>&1 || brew install openssl@3
           prefix="$(brew --prefix)/opt/openssl@3"
