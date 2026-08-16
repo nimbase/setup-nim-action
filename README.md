@@ -145,6 +145,7 @@ pass `release-tag: v1.2.3`.
 | `nim-src` | *(auto)* | Main module; defaults to `src/<repo>.nim` |
 | `deploy-dir` | `.gh-pages` | Output dir for the generated HTML |
 | `deps-command` | `nimble install -Y` | Installs dependencies |
+| `pre-docs-command` | *(empty)* | Command run before generating docs |
 | `doc-command` | *(auto)* | Full doc command override |
 | `deploy` | `true` | Push docs to `publish-branch` |
 | `publish-branch` | `gh-pages` | Branch docs are deployed to |

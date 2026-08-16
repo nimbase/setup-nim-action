@@ -21,6 +21,10 @@ on:
         description: 'Command that installs the package dependencies.'
         type: string
         default: 'nimble install -Y'
+      pre-docs-command:
+        description: 'Optional command run before generating the docs (e.g. install extra tools).'
+        type: string
+        default: ''
       doc-command:
         description: >-
           Full doc generation command. Defaults to
@@ -51,6 +55,10 @@ jobs:
       - name: Install dependencies
         if: inputs.deps-command != ''
         run: ${{ inputs.deps-command }}
+
+      - name: Pre-docs
+        if: inputs.pre-docs-command != ''
+        run: ${{ inputs.pre-docs-command }}
 
       - name: Generate docs
         env:
