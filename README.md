@@ -204,6 +204,10 @@ Nightlies and `devel` are intentionally **not** supported.
 
 ## Notes
 
+- The release workflow installs Homebrew `openssl@3` on macOS arm64 runners and
+  adds it to `LIBRARY_PATH`/`CPATH`. macOS no longer ships a linkable system
+  `libssl` on arm64, so packages using `std/ssl`/OpenSSL would otherwise fail to
+  link with `ld: library 'ssl' not found`.
 - Reusable workflows reference the action with the `$/` self-repository syntax,
   so they always run the exact commit they were pinned to.
 - The docs and release workflows write to the repo (`gh-pages` / a release), so
