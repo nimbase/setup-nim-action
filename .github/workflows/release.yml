@@ -314,7 +314,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.use-clue }}" == "true" ]]; then
-            clue build --verbose
+            clue build --verbose --release
           fi
           if [[ "${{ inputs.use-clue }}" != "true" ]]; then
             ${{ inputs.build-command }}
