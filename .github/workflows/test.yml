@@ -1,4 +1,4 @@
-name: test (reusable)
+name: test (reusable, nimble)
 
 on:
   workflow_call:
@@ -11,18 +11,10 @@ on:
         description: 'JSON array of {os} objects describing the runner matrix.'
         type: string
         default: '[{"os":"ubuntu-latest"},{"os":"windows-latest"},{"os":"macos-15"}]'
-      install-command:
-        description: 'Command that installs the package dependencies. Overrides the default nimble command when set (e.g. a clue command).'
-        type: string
-        default: 'nimble install -Y'
       pre-test-command:
         description: 'Optional command run before the test command (e.g. extra tool installs).'
         type: string
         default: ''
-      test-command:
-        description: 'Command that runs the package tests. Overrides the default nimble command when set (e.g. a clue command).'
-        type: string
-        default: 'nimble test'
       cache:
         description: 'Cache the ~/.nimble directory across runs.'
         type: boolean
@@ -63,9 +55,8 @@ jobs:
         run: ${{ inputs.pre-install-command }}
 
       - name: Install dependencies
-        if: inputs.install-command != ''
         shell: bash
-        run: ${{ inputs.install-command }}
+        run: nimble install -Y
 
       - name: Pre-test
         if: inputs.pre-test-command != ''
@@ -73,4 +64,4 @@ jobs:
 
       - name: Test
         shell: bash
-        run: ${{ inputs.test-command }}
+        run: nimble test

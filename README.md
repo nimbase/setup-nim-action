@@ -3,14 +3,19 @@
 Set up Nim on GitHub Actions and ship it end-to-end: **test**, **document**, and
 **release** your Nim packages across platforms with a handful of lines.
 
-The repo bundles four building blocks:
+The repo bundles seven building blocks (each test/docs/release workflow has a
+nimble variant and a clue variant that preinstalls the [clue](https://github.com/openpeeps/clue)
+package manager):
 
 | Block | What it does | Use it for |
 | --- | --- | --- |
 | [`action.yml`](action.yml) | Composite action: installs Nim (prebuilt → Homebrew → source) and adds it to `PATH` | Any step that needs `nim`/`nimble` |
-| [`.github/workflows/test.yml`](.github/workflows/test.yml) | Reusable workflow: run your package's tests on an OS matrix | CI for Nim packages |
-| [`.github/workflows/docs.yml`](.github/workflows/docs.yml) | Reusable workflow: generate `nim doc` HTML and deploy to GitHub Pages | Documentation hosting |
-| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Reusable workflow: build binaries per OS/arch, package them and create a GitHub release | Cross-platform releases |
+| [`.github/workflows/test.yml`](.github/workflows/test.yml) | Reusable workflow (nimble): run your package's tests on an OS matrix | CI for nimble packages |
+| [`.github/workflows/test_clue.yml`](.github/workflows/test_clue.yml) | Reusable workflow (clue): preinstalls clue, runs `clue install`/`clue test` on an OS matrix | CI for clue packages |
+| [`.github/workflows/docs.yml`](.github/workflows/docs.yml) | Reusable workflow (nimble): generate `nim doc` HTML and deploy to GitHub Pages | Documentation hosting |
+| [`.github/workflows/docs_clue.yml`](.github/workflows/docs_clue.yml) | Reusable workflow (clue): deps via `clue install`, then the same `nim doc` → Pages flow | Documentation hosting with clue |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Reusable workflow (nimble): build binaries per OS/arch, package them and create a GitHub release | Cross-platform releases |
+| [`.github/workflows/release_clue.yml`](.github/workflows/release_clue.yml) | Reusable workflow (clue): same release flow, built with `clue build --release` | Cross-platform clue releases |
 
 ## Usage
 
@@ -45,8 +50,17 @@ jobs:
     with:
       nim-version: '2.2.10'
       os: '[{"os":"ubuntu-latest"},{"os":"windows-latest"}]'
-      test-command: nimble test
-      pre-test-command: nimble install https://github.com/openpeeps/smuggler
+      pre-install-command: nimble install https://github.com/openpeeps/smuggler
+```
+
+Prefer the [clue](https://github.com/openpeeps/clue) package manager? Use
+`test_clue.yml` instead — clue is preinstalled and `clue install`/`clue test`
+are run for you:
+
+```yaml
+jobs:
+  test:
+    uses: nimbase/setup-nim-action/.github/workflows/test_clue.yml@main
 ```
 
 > Tip: to test multiple Nim versions, use a caller-side matrix:
@@ -126,31 +140,35 @@ pass `release-tag: v1.2.3`.
 | `nim-path` | Absolute path to `nim` |
 | `nimble-path` | Absolute path to `nimble` |
 
-## Inputs (`test.yml`)
+## Inputs (`test.yml` and `test_clue.yml`)
 
 | Input | Default | Description |
 | --- | --- | --- |
 | `nim-version` | `stable` | Nim version to test against |
 | `os` | `[{"os":"ubuntu-latest"},{"os":"windows-latest"},{"os":"macos-15"}]` | JSON array of `{os}` objects |
-| `install-command` | `nimble install -Y` | Installs dependencies (empty to skip). Override to use another tool (e.g. `clue install`) |
+| `pre-install-command` | *(empty)* | Command run before installing dependencies |
 | `pre-test-command` | *(empty)* | Command run before the test command |
-| `test-command` | `nimble test` | Command that runs the tests. Override to use another tool (e.g. `clue test`) |
-| `cache` | `true` | Cache `~/.nimble` between runs |
+| `cache` | `true` | Cache `~/.nimble` (and `~/.clue` on the clue variant) between runs |
 
-## Inputs (`docs.yml`)
+`test.yml` runs `nimble install -Y` / `nimble test`; `test_clue.yml` preinstalls
+clue and runs `clue install` / `clue test`.
+
+## Inputs (`docs.yml` and `docs_clue.yml`)
 
 | Input | Default | Description |
 | --- | --- | --- |
 | `nim-version` | `stable` | Nim version used for `nim doc` |
 | `nim-src` | *(auto)* | Main module; defaults to `src/<repo>.nim` |
 | `deploy-dir` | `.gh-pages` | Output dir for the generated HTML |
-| `deps-command` | `nimble install -Y` | Installs dependencies |
 | `pre-docs-command` | *(empty)* | Command run before generating docs |
-| `doc-command` | *(auto)* | Full doc command override |
 | `deploy` | `true` | Push docs to `publish-branch` |
 | `publish-branch` | `gh-pages` | Branch docs are deployed to |
 
-## Inputs (`release.yml`)
+`docs.yml` installs deps with `nimble install -Y`; `docs_clue.yml` preinstalls
+clue and installs deps with `clue install`. Both generate the same
+`nim doc` HTML and deploy to Pages.
+
+## Inputs (`release.yml` and `release_clue.yml`)
 
 | Input | Default | Description |
 | --- | --- | --- |
@@ -159,10 +177,8 @@ pass `release-tag: v1.2.3`.
 | `nim-install-directory` | `.nim_runtime` | Nim install directory (cache + setup) |
 | `target-matrix` | 4-runner set (see above) | JSON array of `{os, arch}` |
 | `checkout` | `true` | Check out the repository |
-| `cache` | `true` | Cache `~/.nimble` + Nim install |
-| `install-command` | `nimble install -y --depsOnly` | Dependency install command. Override to use another tool (e.g. `clue install`) |
-| `build-command` | `nimble build -y` | Build command. Override to use another tool (e.g. `clue build --release`) |
-| `test-command` | *(empty)* | Optional test command before packaging |
+| `cache` | `true` | Cache `~/.nimble` + Nim install (+ `~/.clue` on the clue variant) |
+| `test` | `false` | Run the package tests before building |
 | `bin-directory` | `bin` | Directory (relative to workspace) holding the built binary |
 | `binary` | *(auto)* | Path to the built binary (`<bin-directory>/<app-name>`, `.exe` on Windows) |
 | `extra-files` | `LICENSE README.md` | Extra files copied into the archive |
@@ -175,6 +191,9 @@ pass `release-tag: v1.2.3`.
 | `release-notes-file` | *(empty)* | Path to a release notes file |
 | `prerelease` | `false` | Mark as pre-release |
 | `draft` | `false` | Create as draft |
+
+`release.yml` runs `nimble install -y --depsOnly` / `nimble test` / `nimble build -d:release -y`;
+`release_clue.yml` preinstalls clue and runs `clue install` / `clue test` / `clue build --release`.
 
 ### Outputs (`release.yml`)
 
@@ -203,10 +222,12 @@ Nightlies and `devel` are intentionally **not** supported.
 
 ## Notes
 
-- The release workflow installs Homebrew `openssl@3` on macOS arm64 runners and
-  adds it to `LIBRARY_PATH`/`CPATH`. macOS no longer ships a linkable system
+- Both release workflows install Homebrew `openssl@3` on macOS arm64 runners and
+  add it to `LIBRARY_PATH`/`CPATH`. macOS no longer ships a linkable system
   `libssl` on arm64, so packages using `std/ssl`/OpenSSL would otherwise fail to
   link with `ld: library 'ssl' not found`.
+- Release builds use `-d:release` (`nimble build -d:release -y` /
+  `clue build --release`).
 - Reusable workflows reference the action with the `$/` self-repository syntax,
   so they always run the exact commit they were pinned to.
 - The docs and release workflows write to the repo (`gh-pages` / a release), so

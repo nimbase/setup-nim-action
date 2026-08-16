@@ -52,6 +52,12 @@ jobs:
     with:
       os: '[{"os":"ubuntu-latest"},{"os":"macos-15"}]'
 
+  reusable-test-clue:
+    name: reusable test clue workflow
+    uses: ./.github/workflows/test_clue.yml
+    with:
+      os: '[{"os":"ubuntu-latest"},{"os":"macos-15"}]'
+
   source-build:
     name: source build (linux arm64)
     runs-on: ubuntu-24.04-arm

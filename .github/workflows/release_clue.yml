@@ -1,4 +1,4 @@
-name: release (reusable, nimble)
+name: release (reusable, clue)
 
 on:
   workflow_call:
@@ -25,7 +25,7 @@ on:
         type: boolean
         default: true
       cache:
-        description: 'Cache ~/.nimble and the Nim installation across runs.'
+        description: 'Cache ~/.nimble, ~/.clue and the Nim installation across runs.'
         type: boolean
         default: true
       test:
@@ -111,7 +111,7 @@ on:
         type: boolean
         default: true
       cache:
-        description: 'Cache ~/.nimble and the Nim installation across runs.'
+        description: 'Cache ~/.nimble, ~/.clue and the Nim installation across runs.'
         type: boolean
         default: true
       test:
@@ -194,12 +194,72 @@ jobs:
             ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-
             ${{ runner.os }}-${{ matrix.arch }}-nim-cache-
 
+      - name: Cache clue
+        if: inputs.cache && runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.clue
+          key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-clue-
+            ${{ runner.os }}-${{ matrix.arch }}-nim-clue-
+
       - id: setup
         name: Setup Nim
         uses: $/
         with:
           nim-version: ${{ inputs.nim-version }}
           nim-install-directory: ${{ inputs.nim-install-directory }}
+
+      - name: Install clue
+        shell: bash
+        run: |
+          set -eu
+          os="${{ runner.os }}"
+          arch="${{ runner.arch }}"
+          case "${os}" in
+            Linux)
+              asset="clue_linux-x86_64"; ext="tar.gz"
+              ;;
+            macOS)
+              case "${arch}" in
+                X64)   asset="clue_macos-x86_64"; ext="tar.gz" ;;
+                ARM64) asset="clue_macos-arm64";  ext="tar.gz" ;;
+                *)     echo "ERROR: unsupported macOS arch: ${arch}"; exit 1 ;;
+              esac
+              ;;
+            Windows)
+              asset="clue_windows-x86_64"; ext="zip"
+              ;;
+            *)
+              echo "ERROR: unsupported os: ${os}"; exit 1
+              ;;
+          esac
+
+          url="https://github.com/openpeeps/clue/releases/latest/download/${asset}.${ext}"
+          echo ">> downloading ${url}"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          curl -fsSL "${url}" -o "${work}/clue.${ext}"
+
+          if [[ "${ext}" == "zip" ]]; then
+            win_zip="$(cygpath -w "${work}/clue.zip")"
+            win_dest="$(cygpath -w "${work}")"
+            powershell -NoProfile -Command "Expand-Archive -Force -LiteralPath '${win_zip}' -DestinationPath '${win_dest}'"
+          else
+            tar xzf "${work}/clue.${ext}" -C "${work}"
+          fi
+
+          bin="$(find "${work}" -type f \( -name 'clue' -o -name 'clue.exe' \) | head -n 1)"
+          [[ -n "${bin}" ]] || { echo "ERROR: clue binary not found in archive"; exit 1; }
+          chmod +x "${bin}"
+          mkdir -p "$HOME/.nimble/bin"
+          target="$HOME/.nimble/bin/clue"
+          if [[ "${os}" == "Windows" ]]; then
+            target="${target}.exe"
+          fi
+          install -m 0755 "${bin}" "${target}"
+          echo "installed clue: ${target}"
 
       - name: Install OpenSSL (macOS arm64)
         if: runner.os == 'macOS' && runner.arch == 'ARM64'
@@ -216,16 +276,16 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: nimble install -y --depsOnly
+        run: clue install
 
       - name: Test
         if: inputs.test
         shell: bash
-        run: nimble test
+        run: clue test
 
       - name: Build
         shell: bash
-        run: nimble build -d:release -y
+        run: clue build --release
 
       - name: Create artifact
         shell: bash
