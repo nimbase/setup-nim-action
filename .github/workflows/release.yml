@@ -35,7 +35,7 @@ on:
       build-command:
         description: 'Command that builds the release binary.'
         type: string
-        default: 'nimble build -y'
+        default: 'nimble build -d:release -y'
       test-command:
         description: 'Optional command that runs the package tests before packaging.'
         type: string
