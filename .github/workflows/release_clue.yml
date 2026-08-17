@@ -267,12 +267,25 @@ jobs:
         run: |
           set -eu
           # macOS no longer ships a linkable system libssl (removed from the
-          # SDK), so point clang at the keg-only Homebrew OpenSSL. This is a
-          # no-op on runners where openssl@3 is already installed.
+          # SDK), so install the keg-only Homebrew OpenSSL and wire it up. This
+          # is a no-op on runners where openssl@3 is already installed.
           brew list openssl@3 >/dev/null 2>&1 || brew install openssl@3
           prefix="$(brew --prefix)/opt/openssl@3"
-          echo "LIBRARY_PATH=${prefix}/lib:${LIBRARY_PATH:-}" >> "$GITHUB_ENV"
-          echo "CPATH=${prefix}/include:${CPATH:-}" >> "$GITHUB_ENV"
+
+          # Environment for any tool that honors these variables.
+          echo "LIBRARY_PATH=${prefix}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}" >> "$GITHUB_ENV"
+          echo "CPATH=${prefix}/include${CPATH:+:${CPATH}}" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=${prefix}/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}" >> "$GITHUB_ENV"
+
+          # Inject -L/-I straight into every `nim` invocation via the user
+          # config file, so `-lssl`/`-lcrypto` always resolve at link time even
+          # if the environment variables above are not honored.
+          mkdir -p "$HOME/.config/nim"
+          cfg="$HOME/.config/nim/nim.cfg"
+          if [[ ! -f "${cfg}" ]] || ! grep -q "openssl@3" "${cfg}"; then
+            printf -- '--passL:"-L%s/lib"\n--passC:"-I%s/include"\n' "${prefix}" "${prefix}" >> "${cfg}"
+          fi
+          cat "${cfg}"
 
       - name: Install dependencies
         shell: bash

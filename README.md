@@ -222,10 +222,12 @@ Nightlies and `devel` are intentionally **not** supported.
 
 ## Notes
 
-- Both release workflows install Homebrew `openssl@3` on macOS runners and
-  add it to `LIBRARY_PATH`/`CPATH`. macOS no longer ships a linkable system
-  `libssl`, so packages using `std/ssl`/OpenSSL would otherwise fail to link
-  with `ld: library 'ssl' not found`.
+- The test and release workflows install Homebrew `openssl@3` on macOS runners
+  and wire it up: they set `LIBRARY_PATH`/`CPATH`/`PKG_CONFIG_PATH` and inject
+  `--passL:"-L<openssl>/lib"` / `--passC:"-I<openssl>/include"` into every `nim`
+  invocation via the user config (`~/.config/nim/nim.cfg`). macOS no longer ships
+  a linkable system `libssl`, so packages linking `-lssl`/`-lcrypto` (e.g. via
+  `std/ssl`) would otherwise fail with `ld: library 'ssl' not found`.
 - Release builds use `-d:release` (`nimble build -d:release -y` /
   `clue build --release`).
 - Reusable workflows reference the action with the `$/` self-repository syntax,
