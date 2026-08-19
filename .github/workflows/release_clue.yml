@@ -25,7 +25,7 @@ on:
         type: boolean
         default: true
       cache:
-        description: 'Cache ~/.nimble, ~/.clue and the Nim installation across runs.'
+        description: 'Cache ~/.clue and the Nim installation across runs.'
         type: boolean
         default: true
       test:
@@ -111,7 +111,7 @@ on:
         type: boolean
         default: true
       cache:
-        description: 'Cache ~/.nimble, ~/.clue and the Nim installation across runs.'
+        description: 'Cache ~/.clue and the Nim installation across runs.'
         type: boolean
         default: true
       test:
@@ -182,27 +182,17 @@ jobs:
         if: inputs.checkout
         uses: actions/checkout@v4
 
-      - name: Cache nimble and Nim
+      - name: Cache Clue and Nim
         if: inputs.cache && runner.os != 'Windows'
         uses: actions/cache@v4
         with:
           path: |
-            ~/.nimble
+            ~/.clue
             ${{ inputs.nim-install-directory }}
-          key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-${{ hashFiles('**/*.clue', '**/clue.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-
             ${{ runner.os }}-${{ matrix.arch }}-nim-cache-
-
-      - name: Cache clue
-        if: inputs.cache && runner.os != 'Windows'
-        uses: actions/cache@v4
-        with:
-          path: ~/.clue
-          key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-clue-
-            ${{ runner.os }}-${{ matrix.arch }}-nim-clue-
 
       - id: setup
         name: Setup Nim
@@ -253,13 +243,14 @@ jobs:
           bin="$(find "${work}" -type f \( -name 'clue' -o -name 'clue.exe' \) | head -n 1)"
           [[ -n "${bin}" ]] || { echo "ERROR: clue binary not found in archive"; exit 1; }
           chmod +x "${bin}"
-          mkdir -p "$HOME/.nimble/bin"
-          target="$HOME/.nimble/bin/clue"
+          mkdir -p "$HOME/.clue/bin"
+          target="$HOME/.clue/bin/clue"
           if [[ "${os}" == "Windows" ]]; then
             target="${target}.exe"
           fi
           install -m 0755 "${bin}" "${target}"
           echo "installed clue: ${target}"
+          echo "$HOME/.clue/bin" >> "$GITHUB_PATH"
 
       - name: Install OpenSSL (macOS)
         if: runner.os == 'macOS'

@@ -16,7 +16,7 @@ on:
         type: string
         default: ''
       cache:
-        description: 'Cache the ~/.nimble and ~/.clue directories across runs.'
+        description: 'Cache the ~/.clue directory and Nim installation across runs.'
         type: boolean
         default: true
       pre-install-command:
@@ -65,22 +65,12 @@ jobs:
           fi
           cat "${cfg}"
 
-      - name: Cache nimble
-        if: inputs.cache && runner.os != 'Windows'
-        uses: actions/cache@v4
-        with:
-          path: ~/.nimble
-          key: ${{ runner.os }}-nim-${{ inputs.nim-version }}-nimble-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-nim-${{ inputs.nim-version }}-nimble-
-            ${{ runner.os }}-nimble-
-
-      - name: Cache clue
+      - name: Cache Clue
         if: inputs.cache && runner.os != 'Windows'
         uses: actions/cache@v4
         with:
           path: ~/.clue
-          key: ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.nimble', '**/nimble.lock') }}
+          key: ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-${{ hashFiles('**/*.clue', '**/clue.lock') }}
           restore-keys: |
             ${{ runner.os }}-nim-${{ inputs.nim-version }}-clue-
             ${{ runner.os }}-nim-clue-
@@ -127,13 +117,14 @@ jobs:
           bin="$(find "${work}" -type f \( -name 'clue' -o -name 'clue.exe' \) | head -n 1)"
           [[ -n "${bin}" ]] || { echo "ERROR: clue binary not found in archive"; exit 1; }
           chmod +x "${bin}"
-          mkdir -p "$HOME/.nimble/bin"
-          target="$HOME/.nimble/bin/clue"
+          mkdir -p "$HOME/.clue/bin"
+          target="$HOME/.clue/bin/clue"
           if [[ "${os}" == "Windows" ]]; then
             target="${target}.exe"
           fi
           install -m 0755 "${bin}" "${target}"
           echo "installed clue: ${target}"
+          echo "$HOME/.clue/bin" >> "$GITHUB_PATH"
 
       - name: Pre-install
         if: inputs.pre-install-command != ''
