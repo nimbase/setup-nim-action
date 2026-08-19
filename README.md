@@ -179,6 +179,7 @@ clue and installs deps with `clue install`. Both generate the same
 | `checkout` | `true` | Check out the repository |
 | `cache` | `true` | Cache `~/.nimble` + Nim install (+ `~/.clue` on the clue variant) |
 | `test` | `false` | Run the package tests before building |
+| `pre-build-command` | *(empty)* | Command run before building the binary |
 | `bin-directory` | `bin` | Directory (relative to workspace) holding the built binary |
 | `binary` | *(auto)* | Path to the built binary (`<bin-directory>/<app-name>`, `.exe` on Windows) |
 | `extra-files` | `LICENSE README.md` | Extra files copied into the archive |

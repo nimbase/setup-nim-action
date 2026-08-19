@@ -32,6 +32,10 @@ on:
         description: 'Run the package tests before building.'
         type: boolean
         default: false
+      pre-build-command:
+        description: 'Optional command run before building the binary (e.g. code generation).'
+        type: string
+        default: ''
       bin-directory:
         description: 'Directory (relative to the workspace) containing the built binary. Used for the default `binary` path.'
         type: string
@@ -118,6 +122,10 @@ on:
         description: 'Run the package tests before building.'
         type: boolean
         default: false
+      pre-build-command:
+        description: 'Optional command run before building the binary (e.g. code generation).'
+        type: string
+        default: ''
       bin-directory:
         description: 'Directory (relative to the workspace) containing the built binary. Used for the default `binary` path.'
         type: string
@@ -235,6 +243,11 @@ jobs:
         if: inputs.test
         shell: bash
         run: nimble test
+
+      - name: Pre-build
+        if: inputs.pre-build-command != ''
+        shell: bash
+        run: ${{ inputs.pre-build-command }}
 
       - name: Build
         shell: bash
