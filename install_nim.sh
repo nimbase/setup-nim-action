@@ -154,7 +154,14 @@ if ! is_version "$nim_version"; then
   exit 1
 fi
 
-# --homebrew-nim: install via Homebrew and skip prebuilt/source download
+# --homebrew-nim: install via Homebrew and skip prebuilt/source download (macOS only)
+if [[ "$homebrew_only" == "true" ]]; then
+  if [[ "$os" != "macOS" ]]; then
+    info "--homebrew-nim is only supported on macOS; ignoring"
+    homebrew_only=false
+  fi
+fi
+
 if [[ "$homebrew_only" == "true" ]]; then
   # Ensure Homebrew is in PATH (arm64 runners install to /opt/homebrew)
   if ! command -v brew >/dev/null 2>&1; then
