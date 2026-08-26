@@ -176,22 +176,51 @@ case "$os" in
     esac
     ;;
   macOS)
-    if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
-      download_and_extract_tarxz \
-        "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
-    elif brew_stable_matches; then
-      info "installing Nim ${nim_version} via Homebrew"
-      brew install nim
-      mkdir -p "${nim_install_dir}/bin"
-      for tool in nim nimble nimgrep nimsuggest; do
-        path="$(command -v "$tool" 2>/dev/null || true)"
-        if [[ -n "$path" && -x "$path" ]]; then
-          ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
+    case "$(uname -m)" in
+      arm64)
+        if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_arm64.tar.xz"; then
+          download_and_extract_tarxz \
+            "https://nim-lang.org/download/nim-${nim_version}-macosx_arm64.tar.xz" "nim.tar.xz"
+        elif url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
+          download_and_extract_tarxz \
+            "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
+        elif brew_stable_matches; then
+          info "installing Nim ${nim_version} via Homebrew"
+          brew install nim
+          mkdir -p "${nim_install_dir}/bin"
+          for tool in nim nimble nimgrep nimsuggest; do
+            path="$(command -v "$tool" 2>/dev/null || true)"
+            if [[ -n "$path" && -x "$path" ]]; then
+              ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
+            fi
+          done
+        else
+          build_from_source
         fi
-      done
-    else
-      build_from_source
-    fi
+        ;;
+      x86_64)
+        if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
+          download_and_extract_tarxz \
+            "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
+        elif brew_stable_matches; then
+          info "installing Nim ${nim_version} via Homebrew"
+          brew install nim
+          mkdir -p "${nim_install_dir}/bin"
+          for tool in nim nimble nimgrep nimsuggest; do
+            path="$(command -v "$tool" 2>/dev/null || true)"
+            if [[ -n "$path" && -x "$path" ]]; then
+              ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
+            fi
+          done
+        else
+          build_from_source
+        fi
+        ;;
+      *)
+        err "unsupported macOS architecture: $(uname -m)"
+        exit 1
+        ;;
+    esac
     ;;
   Windows)
     info "downloading https://nim-lang.org/download/nim-${nim_version}_x64.zip"

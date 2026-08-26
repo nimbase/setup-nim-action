@@ -209,17 +209,17 @@ clue and installs deps with `clue install`. Both generate the same
 | --- | --- |
 | Linux x86_64 | Prebuilt `tar.xz` from `nim-lang.org` |
 | Linux arm64 | Build from source (`./build_all.sh`) |
-| macOS | Prebuilt `tar.xz` (published for the newest 2 releases) → Homebrew (exact match only) → source build |
+| macOS | Prebuilt `tar.xz` for the runner's architecture (arm64/x86_64) → Homebrew (exact match only) → source build |
 | Windows x86_64 | Prebuilt `.zip` from `nim-lang.org`, extracted with PowerShell |
 
 `stable` is resolved from `nim-lang.org/channels/stable`; version ranges are
 resolved with `git ls-remote --tags` + `sort -V` (no `jq`, no API rate limits).
 Nightlies and `devel` are intentionally **not** supported.
 
-> **macOS notes**: prebuilt binaries for older versions are no longer published,
-> so old versions fall back to Homebrew (only if it matches the exact version)
-> or a source build (~10–20 min). On ARM macOS runners, an x86_64 prebuilt runs
-> under Rosetta 2. Nightlies/devel are unsupported by design.
+> **macOS notes**: prebuilt binaries exist for both x86_64 and arm64 (for recent
+> releases). Older versions fall back to Homebrew (only if it matches the exact
+> version) or a source build (~10–20 min). Nightlies/devel are unsupported by
+> design.
 
 ## Notes
 
