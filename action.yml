@@ -22,6 +22,11 @@ inputs:
       [Optional] The GITHUB_TOKEN secret. Accepted for compatibility with
       older workflows; the action does not require it.
     default: ''
+  homebrew-nim:
+    description: >-
+      Install Nim via Homebrew instead of downloading prebuilt binaries from
+      nim-lang.org. Useful when prebuilt binaries have architecture mismatches.
+    default: 'false'
 
 outputs:
   nim-version:
@@ -54,7 +59,8 @@ runs:
           --nim-version "${{ inputs.nim-version }}" \
           --nim-install-directory "${{ inputs.nim-install-directory }}" \
           --os "${{ runner.os }}" \
-          --repo-token "${{ inputs.repo-token }}"
+          --repo-token "${{ inputs.repo-token }}" \
+          ${{ inputs.homebrew-nim == 'true' && '--homebrew-nim' || '' }}
 
         install_dir="${GITHUB_WORKSPACE}/${{ inputs.nim-install-directory }}"
         if [[ -f "${install_dir}/.nim-version" ]]; then

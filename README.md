@@ -128,6 +128,7 @@ pass `release-tag: v1.2.3`.
 | `nim-version` | `stable` | `stable`, exact version (`2.2.10`), or range (`2.x`, `1.6.x`) |
 | `nim-install-directory` | `.nim_runtime` | Directory (workspace-relative) to install into |
 | `repo-token` | *(empty)* | Accepted for compatibility; not required |
+| `homebrew-nim` | `false` | Install Nim via Homebrew instead of downloading prebuilt binaries from nim-lang.org |
 
 ### Outputs (`action.yml`)
 
@@ -192,6 +193,7 @@ clue and installs deps with `clue install`. Both generate the same
 | `release-notes-file` | *(empty)* | Path to a release notes file |
 | `prerelease` | `false` | Mark as pre-release |
 | `draft` | `false` | Create as draft |
+| `homebrew-nim` | `false` | Install Nim via Homebrew instead of downloading prebuilt binaries |
 
 `release.yml` runs `nimble install -y --depsOnly` / `nimble test` / `nimble build -d:release -y`;
 `release_clue.yml` preinstalls clue and runs `clue install` / `clue test` / `clue build --release`.

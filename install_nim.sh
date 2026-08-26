@@ -80,6 +80,7 @@ nim_version="stable"
 nim_install_dir=".nim_runtime"
 os="Linux"
 repo_token=""
+homebrew_only=false
 while ((0 < $#)); do
   case $1 in
     --nim-version)
@@ -97,6 +98,10 @@ while ((0 < $#)); do
     --repo-token)
       repo_token=$2
       shift 2
+      ;;
+    --homebrew-nim)
+      homebrew_only=true
+      shift
       ;;
     *)
       err "unknown option: $1"
@@ -147,6 +152,31 @@ fi
 if ! is_version "$nim_version"; then
   err "invalid nim-version: $nim_version"
   exit 1
+fi
+
+# --homebrew-nim: install via Homebrew and skip prebuilt/source download
+if [[ "$homebrew_only" == "true" ]]; then
+  info "installing Nim via Homebrew (--homebrew-nim)"
+  brew install nim
+  mkdir -p "${nim_install_dir}/bin"
+  for tool in nim nimble nimgrep nimsuggest; do
+    path="$(command -v "$tool" 2>/dev/null || true)"
+    if [[ -n "$path" && -x "$path" ]]; then
+      ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
+    fi
+  done
+  if [[ ! -x "${nim_install_dir}/bin/nim" ]]; then
+    err "nim binary not found after brew install"
+    exit 1
+  fi
+  brew_version="$(brew info nim 2>/dev/null | head -n 1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)"
+  if [[ -n "$brew_version" ]]; then
+    nim_version="$brew_version"
+  fi
+  echo "$nim_version" > "${nim_install_dir}/.nim-version"
+  info "RESOLVED_VERSION=${nim_version}"
+  info "Nim ${nim_version} installed at ${PWD}/${nim_install_dir}"
+  exit 0
 fi
 
 # reuse an existing installation (e.g. restored from cache)
