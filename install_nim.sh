@@ -153,8 +153,18 @@ fi
 if [[ -f "${nim_install_dir}/.nim-version" ]] &&
   [[ "$(cat "${nim_install_dir}/.nim-version")" == "$nim_version" ]] &&
   [[ -x "${nim_install_dir}/bin/nim" || -x "${nim_install_dir}/bin/nim.exe" ]]; then
-  info "Nim ${nim_version} already installed at ${nim_install_dir}; skipping download"
-  exit 0
+  # Verify the cached binary matches the host architecture; an x86_64 binary
+  # under Rosetta will link against x86_64 libs, causing architecture mismatches
+  # with arm64 homebrew kegs.
+  nim_arch="$(file -b "${nim_install_dir}/bin/nim" 2>/dev/null || true)"
+  host_arch="$(uname -m)"
+  if [[ "$nim_arch" == *"$host_arch"* ]]; then
+    info "Nim ${nim_version} already installed at ${nim_install_dir}; skipping download"
+    exit 0
+  else
+    info "installed Nim architecture ($nim_arch) does not match host ($host_arch); reinstalling"
+    rm -rf "$nim_install_dir"
+  fi
 fi
 
 info "installing Nim ${nim_version} (os = $os)"
