@@ -63,6 +63,19 @@ jobs:
           if [[ ! -f "${cfg}" ]] || ! grep -q "openssl@3" "${cfg}"; then
             printf -- '--passL:"-L%s/lib"\n--passC:"-I%s/include"\n' "${prefix}" "${prefix}" >> "${cfg}"
           fi
+
+          # Force the build architecture to match the host. On arm64 runners the
+          # prebuilt Nim can emit x86_64 code (mismatched target CPU), which then
+          # fails to link against the arm64 Homebrew OpenSSL keg.
+          echo "host arch: $(uname -m)"
+          echo "clang target: $(clang -dumpmachine 2>/dev/null || true)"
+          if [[ -f "${GITHUB_WORKSPACE}/.nim_runtime/config/nim.cfg" ]]; then
+            echo "prebuilt config cpu/os lines:"
+            grep -iE 'cpu|os' "${GITHUB_WORKSPACE}/.nim_runtime/config/nim.cfg" || echo "(none)"
+          fi
+          if [[ "$(uname -m)" == "arm64" ]] && ! grep -q -- "-arch arm64" "${cfg}"; then
+            printf -- '--passC:"-arch arm64"\n--passL:"-arch arm64"\n' >> "${cfg}"
+          fi
           cat "${cfg}"
 
       - name: Cache Clue
