@@ -156,6 +156,18 @@ fi
 
 # --homebrew-nim: install via Homebrew and skip prebuilt/source download
 if [[ "$homebrew_only" == "true" ]]; then
+  # Ensure Homebrew is in PATH (arm64 runners install to /opt/homebrew)
+  if ! command -v brew >/dev/null 2>&1; then
+    if [[ -x /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -x /usr/local/bin/brew ]]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
+  fi
+  if ! command -v brew >/dev/null 2>&1; then
+    err "Homebrew not found; cannot use --homebrew-nim"
+    exit 1
+  fi
   info "installing Nim via Homebrew (--homebrew-nim)"
   brew install nim
   mkdir -p "${nim_install_dir}/bin"
