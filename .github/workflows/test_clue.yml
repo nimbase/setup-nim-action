@@ -73,8 +73,13 @@ jobs:
             echo "prebuilt config cpu/os lines:"
             grep -iE 'cpu|os' "${GITHUB_WORKSPACE}/.nim_runtime/config/nim.cfg" || echo "(none)"
           fi
-          if [[ "$(uname -m)" == "arm64" ]] && ! grep -q -- "-arch arm64" "${cfg}"; then
-            printf -- '--passC:"-arch arm64"\n--passL:"-arch arm64"\n' >> "${cfg}"
+          if [[ "$(uname -m)" == "arm64" ]]; then
+            if ! grep -q -- "--cpu:arm64" "${cfg}"; then
+              printf -- '--cpu:arm64\n' >> "${cfg}"
+            fi
+            if ! grep -q -- "-arch arm64" "${cfg}"; then
+              printf -- '--passC:"-arch arm64"\n--passL:"-arch arm64"\n' >> "${cfg}"
+            fi
           fi
           cat "${cfg}"
 
