@@ -142,7 +142,12 @@ jobs:
           fi
           install -m 0755 "${bin}" "${target}"
           echo "installed clue: ${target}"
-          echo "$HOME/.clue/bin" >> "$GITHUB_PATH"
+          if [[ "${os}" == "Windows" ]]; then
+            win_path="$(cygpath -w "$HOME/.clue/bin")"
+            echo "$win_path" >> "$GITHUB_PATH"
+          else
+            echo "$HOME/.clue/bin" >> "$GITHUB_PATH"
+          fi
 
       - name: Pre-install
         if: inputs.pre-install-command != ''
@@ -155,6 +160,7 @@ jobs:
 
       - name: Pre-test
         if: inputs.pre-test-command != ''
+        shell: bash
         run: ${{ inputs.pre-test-command }}
 
       - name: Test
