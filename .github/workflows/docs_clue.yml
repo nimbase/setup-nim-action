@@ -10,7 +10,8 @@ on:
       nim-src:
         description: >-
           Path to the main module, e.g. `src/myproject.nim`. If empty,
-          defaults to `src/<repository-name>.nim`.
+          defaults to `src/<repository-name>.nim`, with a trailing
+          `-nim` suffix stripped (`xxx-nim` -> `src/xxx.nim`).
         type: string
         default: ''
       deploy-dir:
@@ -111,16 +112,17 @@ jobs:
           set -eu
           nim_src="${NIM_SRC}"
           if [[ -z "${nim_src}" ]]; then
-            nim_src="src/${REPO_NAME}.nim"
+            # Nimble convention: repo `xxx-nim` ships module `src/xxx.nim`.
+            nim_src="src/${REPO_NAME%-nim}.nim"
           fi
           doc_cmd="nim doc --index:on --project --path:. --out:${DEPLOY_DIR} ${nim_src}"
           echo ">> Running: ${doc_cmd}"
           eval "${doc_cmd}"
 
-          main_html="${DEPLOY_DIR}/${REPO_NAME}.html"
+          main_html="${DEPLOY_DIR}/${REPO_NAME%-nim}.html"
           if [[ -f "${main_html}" ]]; then
             mv "${main_html}" "${DEPLOY_DIR}/index.html"
-            esc="$(printf '%s' "${REPO_NAME}" | sed 's/[.[\*^$]/\\&/g')"
+            esc="$(printf '%s' "${REPO_NAME%-nim}" | sed 's/[.[\*^$]/\\&/g')"
             sed -i "s/${esc}\.html/index.html/g" "${DEPLOY_DIR}/index.html"
             sed -i "s/${esc}\.html/index.html/g" "${DEPLOY_DIR}/theindex.html" || true
           fi
