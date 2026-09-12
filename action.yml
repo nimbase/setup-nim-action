@@ -31,7 +31,7 @@ inputs:
     description: >-
       [Optional] Custom command run after the toolchain is installed and on
       PATH (e.g. a project-specific build such as
-      `denim build src/openparser.nim --cmake -y`). Empty by default, in
+      `nimble build -d:release -y`). Empty by default, in
       which case the action only sets up the environment.
     default: ''
 

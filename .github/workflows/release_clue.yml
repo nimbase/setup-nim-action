@@ -43,16 +43,9 @@ on:
       build-command:
         description: >-
           Command building the release binary. Defaults to `clue build --release`.
-          Override for custom builds (e.g. `denim build src/openparser.nim --cmake -y`).
+          Override for custom builds (e.g. `nimble build -d:release -y`).
         type: string
         default: 'clue build --release'
-      node-version:
-        description: >-
-          Node.js version to set up (via setup-node) before building.
-          Empty skips Node setup. Setting it also installs cmake-js globally
-          (required by denim `--cmake` builds).
-        type: string
-        default: ''
       pre-build-command:
         description: 'Optional command run before building the binary (e.g. code generation).'
         type: string
@@ -158,16 +151,9 @@ on:
       build-command:
         description: >-
           Command building the release binary. Defaults to `clue build --release`.
-          Override for custom builds (e.g. `denim build src/openparser.nim --cmake -y`).
+          Override for custom builds (e.g. `nimble build -d:release -y`).
         type: string
         default: 'clue build --release'
-      node-version:
-        description: >-
-          Node.js version to set up (via setup-node) before building.
-          Empty skips Node setup. Setting it also installs cmake-js globally
-          (required by denim `--cmake` builds).
-        type: string
-        default: ''
       pre-build-command:
         description: 'Optional command run before building the binary (e.g. code generation).'
         type: string
@@ -260,17 +246,6 @@ jobs:
           nim-version: ${{ inputs.nim-version }}
           nim-install-directory: ${{ inputs.nim-install-directory }}
           homebrew-nim: ${{ inputs.homebrew-nim == true && 'true' || 'false' }}
-
-      - name: Setup Node and cmake-js
-        if: inputs.node-version != ''
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node-version }}
-
-      - name: Install cmake-js
-        if: inputs.node-version != ''
-        shell: bash
-        run: npm install -g cmake-js
 
       - name: Install clue
         if: inputs.package-manager == 'clue'

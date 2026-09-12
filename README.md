@@ -129,7 +129,7 @@ pass `release-tag: v1.2.3`.
 | `nim-install-directory` | `.nim_runtime` | Directory (workspace-relative) to install into |
 | `repo-token` | *(empty)* | Accepted for compatibility; not required |
 | `homebrew-nim` | `false` | Install Nim via Homebrew instead of downloading prebuilt binaries from nim-lang.org |
-| `command` | *(empty)* | Custom command run after setup (toolchain on PATH); e.g. `denim build src/openparser.nim --cmake -y` |
+| `command` | *(empty)* | Custom command run after setup (toolchain on PATH); e.g. `nimble build -d:release -y` |
 
 ### Outputs (`action.yml`)
 
@@ -183,8 +183,7 @@ clue and installs deps with `clue install`. Both generate the same
 | `test` | `false` | Run the package tests before building |
 | `test-flags` | *(empty)* | Extra flags for `nimble test` (`release_clue.yml`, nimble mode only) |
 | `package-manager` | `clue` | `clue` or `nimble` (`release_clue.yml` only) |
-| `build-command` | `clue build --release` | Build command (`release_clue.yml` only; override for custom builds like denim) |
-| `node-version` | *(empty)* | Set up Node.js + global cmake-js (`release_clue.yml` only; empty skips) |
+| `build-command` | `clue build --release` | Build command (`release_clue.yml` only; override for custom builds) |
 | `pre-build-command` | *(empty)* | Command run before building the binary |
 | `bin-directory` | `bin` | Directory (relative to workspace) holding the built binary |
 | `binary` | *(auto)* | Path to the built binary (`<bin-directory>/<app-name>`, `.exe` on Windows) |
@@ -203,8 +202,7 @@ clue and installs deps with `clue install`. Both generate the same
 `release.yml` runs `nimble install -y --depsOnly` / `nimble test` / `nimble build -d:release -y`;
 `release_clue.yml` preinstalls clue and runs `clue install` / `clue test` / `clue build --release`
 (or the `nimble` / custom-command equivalents when `package-manager: nimble` /
-`build-command` are set — e.g. a denim NAPI build, which must not compile
-`src/<pkg>.nim` directly).
+`build-command` are set).
 
 ### Outputs (`release.yml`)
 
