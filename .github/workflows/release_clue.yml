@@ -32,6 +32,27 @@ on:
         description: 'Run the package tests before building.'
         type: boolean
         default: false
+      test-flags:
+        description: 'Extra flags appended to `nimble test` (nimble package-manager only).'
+        type: string
+        default: ''
+      package-manager:
+        description: "Package manager for deps/tests: 'clue' or 'nimble'."
+        type: string
+        default: 'clue'
+      build-command:
+        description: >-
+          Command building the release binary. Defaults to `clue build --release`.
+          Override for custom builds (e.g. `denim build src/openparser.nim --cmake -y`).
+        type: string
+        default: 'clue build --release'
+      node-version:
+        description: >-
+          Node.js version to set up (via setup-node) before building.
+          Empty skips Node setup. Setting it also installs cmake-js globally
+          (required by denim `--cmake` builds).
+        type: string
+        default: ''
       pre-build-command:
         description: 'Optional command run before building the binary (e.g. code generation).'
         type: string
@@ -126,6 +147,27 @@ on:
         description: 'Run the package tests before building.'
         type: boolean
         default: false
+      test-flags:
+        description: 'Extra flags appended to `nimble test` (nimble package-manager only).'
+        type: string
+        default: ''
+      package-manager:
+        description: "Package manager for deps/tests: 'clue' or 'nimble'."
+        type: string
+        default: 'clue'
+      build-command:
+        description: >-
+          Command building the release binary. Defaults to `clue build --release`.
+          Override for custom builds (e.g. `denim build src/openparser.nim --cmake -y`).
+        type: string
+        default: 'clue build --release'
+      node-version:
+        description: >-
+          Node.js version to set up (via setup-node) before building.
+          Empty skips Node setup. Setting it also installs cmake-js globally
+          (required by denim `--cmake` builds).
+        type: string
+        default: ''
       pre-build-command:
         description: 'Optional command run before building the binary (e.g. code generation).'
         type: string
@@ -204,6 +246,7 @@ jobs:
         with:
           path: |
             ~/.clue
+            ~/.nimble
             ${{ inputs.nim-install-directory }}
           key: ${{ runner.os }}-${{ matrix.arch }}-nim-${{ inputs.nim-version }}-cache-${{ hashFiles('**/*.clue', '**/clue.lock') }}
           restore-keys: |
@@ -218,12 +261,28 @@ jobs:
           nim-install-directory: ${{ inputs.nim-install-directory }}
           homebrew-nim: ${{ inputs.homebrew-nim == true && 'true' || 'false' }}
 
+      - name: Setup Node and cmake-js
+        if: inputs.node-version != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install cmake-js
+        if: inputs.node-version != ''
+        shell: bash
+        run: npm install -g cmake-js
+
       - name: Install clue
+        if: inputs.package-manager == 'clue'
         shell: bash
         run: |
           set -eu
           os="${{ runner.os }}"
           arch="${{ runner.arch }}"
+          if [[ "${os}" == "Linux" && "${arch}" == "ARM64" ]]; then
+            echo "ERROR: no clue binary for Linux ARM64; use package-manager 'nimble' instead"
+            exit 1
+          fi
           case "${os}" in
             Linux)
               asset="clue_linux-x86_64"; ext="tar.gz"
@@ -310,12 +369,22 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: clue install
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "nimble" ]]; then
+            nimble install -y
+          else
+            clue install
+          fi
 
       - name: Test
         if: inputs.test
         shell: bash
-        run: clue test
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "nimble" ]]; then
+            nimble test ${{ inputs.test-flags }}
+          else
+            clue test
+          fi
 
       - name: Pre-build
         if: inputs.pre-build-command != ''
@@ -324,7 +393,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: clue build --release
+        run: ${{ inputs.build-command }}
 
       - name: Create artifact
         shell: bash

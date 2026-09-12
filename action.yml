@@ -27,6 +27,13 @@ inputs:
       Install Nim via Homebrew instead of downloading prebuilt binaries from
       nim-lang.org. Useful when prebuilt binaries have architecture mismatches.
     default: 'false'
+  command:
+    description: >-
+      [Optional] Custom command run after the toolchain is installed and on
+      PATH (e.g. a project-specific build such as
+      `denim build src/openparser.nim --cmake -y`). Empty by default, in
+      which case the action only sets up the environment.
+    default: ''
 
 outputs:
   nim-version:
@@ -98,3 +105,8 @@ runs:
         echo "installed nimble fullpath: $(which nimble)"
         nim --version
         nimble --version
+
+    - name: Custom command
+      if: inputs.command != ''
+      shell: bash
+      run: ${{ inputs.command }}
