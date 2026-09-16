@@ -23,6 +23,10 @@ on:
         description: 'Optional command run before installing/building the package (e.g. build a C dependency).'
         type: string
         default: ''
+      test-flags:
+        description: 'Extra flags appended to `nimble test` (e.g. `-d:ssl --mm:arc`).'
+        type: string
+        default: ''
 
 jobs:
   test:
@@ -103,4 +107,4 @@ jobs:
 
       - name: Test
         shell: bash
-        run: nimble test
+        run: nimble test ${{ inputs.test-flags }}

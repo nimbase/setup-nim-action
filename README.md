@@ -150,10 +150,12 @@ pass `release-tag: v1.2.3`.
 | `os` | `[{"os":"ubuntu-latest"},{"os":"windows-latest"},{"os":"macos-15"}]` | JSON array of `{os}` objects |
 | `pre-install-command` | *(empty)* | Command run before installing dependencies |
 | `pre-test-command` | *(empty)* | Command run before the test command |
+| `test-flags` | *(empty)* | Extra flags appended to `nimble test` (`test.yml`) / `clue test` (`test_clue.yml`), e.g. `-d:ssl` |
 | `cache` | `true` | Cache `~/.nimble` (and `~/.clue` on the clue variant) between runs |
 
 `test.yml` runs `nimble install -Y` / `nimble test`; `test_clue.yml` preinstalls
-clue and runs `clue install` / `clue test`.
+clue and runs `clue install` / `clue test`. Extra `test-flags` are forwarded to
+the Nim compiler by both package managers.
 
 ## Inputs (`docs.yml` and `docs_clue.yml`)
 
