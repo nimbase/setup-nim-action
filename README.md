@@ -151,7 +151,7 @@ pass `release-tag: v1.2.3`.
 | `pre-install-command` | *(empty)* | Command run before installing dependencies |
 | `pre-test-command` | *(empty)* | Command run before the test command |
 | `test-flags` | *(empty)* | Extra flags appended to `nimble test` (`test.yml`) / `clue test` (`test_clue.yml`), e.g. `-d:ssl` |
-| `cache` | `true` | Cache `~/.nimble` (and `~/.clue` on the clue variant) between runs |
+| `cache` | `false` | Cache `~/.nimble` (and `~/.clue` on the clue variant) between runs |
 
 `test.yml` runs `nimble install -Y` / `nimble test`; `test_clue.yml` preinstalls
 clue and runs `clue install` / `clue test`. Extra `test-flags` are forwarded to
@@ -181,7 +181,7 @@ clue and installs deps with `clue install`. Both generate the same
 | `nim-install-directory` | `.nim_runtime` | Nim install directory (cache + setup) |
 | `target-matrix` | 4-runner set (see above) | JSON array of `{os, arch}` |
 | `checkout` | `true` | Check out the repository |
-| `cache` | `true` | Cache `~/.nimble` + Nim install (+ `~/.clue` on the clue variant) |
+| `cache` | `false` | Cache `~/.nimble` + Nim install (+ `~/.clue` on the clue variant) |
 | `test` | `false` | Run the package tests before building |
 | `test-flags` | *(empty)* | Extra flags for `nimble test` (`release_clue.yml`, nimble mode only) |
 | `package-manager` | `clue` | `clue` or `nimble` (`release_clue.yml` only) |

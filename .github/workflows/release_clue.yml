@@ -27,7 +27,7 @@ on:
       cache:
         description: 'Cache ~/.clue and the Nim installation across runs.'
         type: boolean
-        default: true
+        default: false
       test:
         description: 'Run the package tests before building.'
         type: boolean
@@ -135,7 +135,7 @@ on:
       cache:
         description: 'Cache ~/.clue and the Nim installation across runs.'
         type: boolean
-        default: true
+        default: false
       test:
         description: 'Run the package tests before building.'
         type: boolean

@@ -18,7 +18,7 @@ on:
       cache:
         description: 'Cache the ~/.clue directory and Nim installation across runs.'
         type: boolean
-        default: true
+        default: false
       pre-install-command:
         description: 'Optional command run before installing/building the package (e.g. build a C dependency).'
         type: string
