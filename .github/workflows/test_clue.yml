@@ -160,7 +160,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: clue install
+        run: clue install --depsOnly
 
       - name: Pre-test
         if: inputs.pre-test-command != ''
