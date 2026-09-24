@@ -103,6 +103,7 @@ jobs:
 
       - name: Pre-test
         if: inputs.pre-test-command != ''
+        shell: bash
         run: ${{ inputs.pre-test-command }}
 
       - name: Test
