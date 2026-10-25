@@ -27,6 +27,20 @@ on:
         description: 'Extra flags appended to `clue test` (e.g. `-d:ssl --mm:arc`).'
         type: string
         default: ''
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - '**/.gitignore'
+      - '.*'
+      - '**/.*'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - '**/.gitignore'
+      - '.*'
+      - '**/.*'
 
 jobs:
   test:
