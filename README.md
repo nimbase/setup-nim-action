@@ -218,7 +218,7 @@ clue and installs deps with `clue install`. Both generate the same
 | Platform | Strategy |
 | --- | --- |
 | Linux x86_64 | Prebuilt `tar.xz` from `nim-lang.org` |
-| Linux arm64 | Build from source (`./build_all.sh`) |
+| Linux arm64 | Prebuilt `linux_arm64.tar.xz` when available (recent 2.2.x, e.g. 2.2.12) → source build fallback (`./build_all.sh`) |
 | macOS | Prebuilt `tar.xz` for the runner's architecture (arm64/x86_64) → Homebrew (exact match only) → source build |
 | Windows x86_64 | Prebuilt `.zip` from `nim-lang.org`, extracted with PowerShell |
 
@@ -227,9 +227,10 @@ resolved with `git ls-remote --tags` + `sort -V` (no `jq`, no API rate limits).
 Nightlies and `devel` are intentionally **not** supported.
 
 > **macOS notes**: prebuilt binaries exist for both x86_64 and arm64 (for recent
-> releases). Older versions fall back to Homebrew (only if it matches the exact
+> 2.2.x releases, e.g. 2.2.8+). Older versions fall back to Homebrew (only if it matches the exact
 > version) or a source build (~10–20 min). Nightlies/devel are unsupported by
-> design.
+> design. Linux arm64 follows the same pattern: `linux_arm64` prebuilt when
+> available, otherwise a source build.
 
 ## Notes
 

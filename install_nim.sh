@@ -226,7 +226,12 @@ case "$os" in
           "https://nim-lang.org/download/nim-${nim_version}-linux_x64.tar.xz" "nim.tar.xz"
         ;;
       aarch64 | arm64)
-        build_from_source
+        if url_available "https://nim-lang.org/download/nim-${nim_version}-linux_arm64.tar.xz"; then
+          download_and_extract_tarxz \
+            "https://nim-lang.org/download/nim-${nim_version}-linux_arm64.tar.xz" "nim.tar.xz"
+        else
+          build_from_source
+        fi
         ;;
       *)
         err "unsupported architecture: $(uname -m)"
