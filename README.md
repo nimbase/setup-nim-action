@@ -9,7 +9,7 @@ package manager):
 
 | Block | What it does | Use it for |
 | --- | --- | --- |
-| [`action.yml`](action.yml) | Composite action: installs Nim (prebuilt → Homebrew → source) and adds it to `PATH` | Any step that needs `nim`/`nimble` |
+| [`action.yml`](action.yml) | Composite action: installs Nim (nim-prebuilts → upstream → Homebrew → source) and adds it to `PATH` | Any step that needs `nim`/`nimble` |
 | [`.github/workflows/test.yml`](.github/workflows/test.yml) | Reusable workflow (nimble): run your package's tests on an OS matrix | CI for nimble packages |
 | [`.github/workflows/test_clue.yml`](.github/workflows/test_clue.yml) | Reusable workflow (clue): preinstalls clue, runs `clue install`/`clue test` on an OS matrix | CI for clue packages |
 | [`.github/workflows/docs.yml`](.github/workflows/docs.yml) | Reusable workflow (nimble): generate `nim doc` HTML and deploy to GitHub Pages | Documentation hosting |
@@ -215,6 +215,11 @@ clue and installs deps with `clue install`. Both generate the same
 
 ## How Nim is installed
 
+Nim is installed from [nimbase/nim-prebuilts](https://github.com/nimbase/nim-prebuilts),
+which publishes toolchains for all six targets on every `nim-lang/nim` release.
+If no prebuilt exists for the requested version, the action falls back through
+the chain below:
+
 | Platform | Strategy |
 | --- | --- |
 | Linux x86_64 | `nim-prebuilts` `tar.xz` → `nim-lang.org` `tar.xz` |
@@ -227,10 +232,11 @@ clue and installs deps with `clue install`. Both generate the same
 resolved with `git ls-remote --tags` + `sort -V` (no `jq`, no API rate limits).
 Nightlies and `devel` are intentionally **not** supported.
 
-> **macOS notes**: prebuilt binaries exist for both x86_64 and arm64 (for recent
-> releases). Older versions fall back to Homebrew (only if it matches the exact
-> version) or a source build (~10–20 min). Nightlies/devel are unsupported by
-> design.
+> **Prebuilt notes**: [nim-prebuilts](https://github.com/nimbase/nim-prebuilts)
+> ships all six targets (Linux/macOS/Windows on x64/arm64) for each built Nim
+> version. On macOS, older versions without a prebuilt fall back to Homebrew
+> (only if it matches the exact version) or a source build (~10–20 min).
+> Nightlies/devel are unsupported by design.
 
 ## Notes
 
