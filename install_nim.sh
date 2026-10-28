@@ -75,6 +75,56 @@ build_from_source() {
   move_nim_compiler "$src_dir" "$nim_install_dir"
 }
 
+# Community prebuilts covering all six targets (linux/macos/windows x x64/arm64).
+# Layout mirrors nim-lang.org, except Windows assets carry a windows_ prefix.
+prebuilt_asset() {
+  local asset=""
+  case "$os" in
+    Linux)
+      case "$(uname -m)" in
+        x86_64 | amd64) asset="nim-${nim_version}-linux_x64.tar.xz" ;;
+        aarch64 | arm64) asset="nim-${nim_version}-linux_arm64.tar.xz" ;;
+      esac
+      ;;
+    macOS)
+      case "$(uname -m)" in
+        arm64) asset="nim-${nim_version}-macosx_arm64.tar.xz" ;;
+        x86_64) asset="nim-${nim_version}-macosx_x64.tar.xz" ;;
+      esac
+      ;;
+    Windows)
+      case "$(uname -m)" in
+        x86_64 | amd64) asset="nim-${nim_version}-windows_x64.zip" ;;
+        aarch64 | arm64) asset="nim-${nim_version}-windows_arm64.zip" ;;
+      esac
+      ;;
+  esac
+  echo "$asset"
+}
+
+download_from_prebuilts() {
+  local asset url
+  asset="$(prebuilt_asset)"
+  [[ -n "$asset" ]] || return 1
+  url="https://github.com/nimbase/nim-prebuilts/releases/download/v${nim_version}/${asset}"
+  if ! url_available "$url"; then
+    info "no nim-prebuilts asset for Nim ${nim_version} (${asset}); falling back"
+    return 1
+  fi
+  case "$asset" in
+    *.tar.xz)
+      download_and_extract_tarxz "$url" "nim.tar.xz"
+      ;;
+    *.zip)
+      info "downloading $url"
+      curl -fsSL "$url" -o nim.zip
+      powershell.exe -NoProfile -Command "Expand-Archive -Force -LiteralPath 'nim.zip' -DestinationPath '.'"
+      rm -f nim.zip
+      move_nim_compiler "nim-${nim_version}" "$nim_install_dir"
+      ;;
+  esac
+}
+
 # parse command line args
 nim_version="stable"
 nim_install_dir=".nim_runtime"
@@ -218,81 +268,83 @@ fi
 
 info "installing Nim ${nim_version} (os = $os)"
 
-case "$os" in
-  Linux)
-    case "$(uname -m)" in
-      x86_64 | amd64)
-        download_and_extract_tarxz \
-          "https://nim-lang.org/download/nim-${nim_version}-linux_x64.tar.xz" "nim.tar.xz"
-        ;;
-      aarch64 | arm64)
-        build_from_source
-        ;;
-      *)
-        err "unsupported architecture: $(uname -m)"
-        exit 1
-        ;;
-    esac
-    ;;
-  macOS)
-    case "$(uname -m)" in
-      arm64)
-        if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_arm64.tar.xz"; then
+if ! download_from_prebuilts; then
+  case "$os" in
+    Linux)
+      case "$(uname -m)" in
+        x86_64 | amd64)
           download_and_extract_tarxz \
-            "https://nim-lang.org/download/nim-${nim_version}-macosx_arm64.tar.xz" "nim.tar.xz"
-        elif url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
-          download_and_extract_tarxz \
-            "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
-        elif brew_stable_matches; then
-          info "installing Nim ${nim_version} via Homebrew"
-          brew install nim
-          mkdir -p "${nim_install_dir}/bin"
-          for tool in nim nimble nimgrep nimsuggest; do
-            path="$(command -v "$tool" 2>/dev/null || true)"
-            if [[ -n "$path" && -x "$path" ]]; then
-              ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
-            fi
-          done
-        else
+            "https://nim-lang.org/download/nim-${nim_version}-linux_x64.tar.xz" "nim.tar.xz"
+          ;;
+        aarch64 | arm64)
           build_from_source
-        fi
-        ;;
-      x86_64)
-        if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
-          download_and_extract_tarxz \
-            "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
-        elif brew_stable_matches; then
-          info "installing Nim ${nim_version} via Homebrew"
-          brew install nim
-          mkdir -p "${nim_install_dir}/bin"
-          for tool in nim nimble nimgrep nimsuggest; do
-            path="$(command -v "$tool" 2>/dev/null || true)"
-            if [[ -n "$path" && -x "$path" ]]; then
-              ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
-            fi
-          done
-        else
-          build_from_source
-        fi
-        ;;
-      *)
-        err "unsupported macOS architecture: $(uname -m)"
-        exit 1
-        ;;
-    esac
-    ;;
-  Windows)
-    info "downloading https://nim-lang.org/download/nim-${nim_version}_x64.zip"
-    curl -fsSL "https://nim-lang.org/download/nim-${nim_version}_x64.zip" -o nim.zip
-    powershell.exe -NoProfile -Command "Expand-Archive -Force -LiteralPath 'nim.zip' -DestinationPath '.'"
-    rm -f nim.zip
-    move_nim_compiler "nim-${nim_version}" "$nim_install_dir"
-    ;;
-  *)
-    err "unsupported os: $os"
-    exit 1
-    ;;
-esac
+          ;;
+        *)
+          err "unsupported architecture: $(uname -m)"
+          exit 1
+          ;;
+      esac
+      ;;
+    macOS)
+      case "$(uname -m)" in
+        arm64)
+          if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_arm64.tar.xz"; then
+            download_and_extract_tarxz \
+              "https://nim-lang.org/download/nim-${nim_version}-macosx_arm64.tar.xz" "nim.tar.xz"
+          elif url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
+            download_and_extract_tarxz \
+              "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
+          elif brew_stable_matches; then
+            info "installing Nim ${nim_version} via Homebrew"
+            brew install nim
+            mkdir -p "${nim_install_dir}/bin"
+            for tool in nim nimble nimgrep nimsuggest; do
+              path="$(command -v "$tool" 2>/dev/null || true)"
+              if [[ -n "$path" && -x "$path" ]]; then
+                ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
+              fi
+            done
+          else
+            build_from_source
+          fi
+          ;;
+        x86_64)
+          if url_available "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz"; then
+            download_and_extract_tarxz \
+              "https://nim-lang.org/download/nim-${nim_version}-macosx_x64.tar.xz" "nim.tar.xz"
+          elif brew_stable_matches; then
+            info "installing Nim ${nim_version} via Homebrew"
+            brew install nim
+            mkdir -p "${nim_install_dir}/bin"
+            for tool in nim nimble nimgrep nimsuggest; do
+              path="$(command -v "$tool" 2>/dev/null || true)"
+              if [[ -n "$path" && -x "$path" ]]; then
+                ln -sfn "$path" "${nim_install_dir}/bin/${tool}"
+              fi
+            done
+          else
+            build_from_source
+          fi
+          ;;
+        *)
+          err "unsupported macOS architecture: $(uname -m)"
+          exit 1
+          ;;
+      esac
+      ;;
+    Windows)
+      info "downloading https://nim-lang.org/download/nim-${nim_version}_x64.zip"
+      curl -fsSL "https://nim-lang.org/download/nim-${nim_version}_x64.zip" -o nim.zip
+      powershell.exe -NoProfile -Command "Expand-Archive -Force -LiteralPath 'nim.zip' -DestinationPath '.'"
+      rm -f nim.zip
+      move_nim_compiler "nim-${nim_version}" "$nim_install_dir"
+      ;;
+    *)
+      err "unsupported os: $os"
+      exit 1
+      ;;
+  esac
+fi
 
 if [[ ! -x "${nim_install_dir}/bin/nim" ]] && [[ ! -x "${nim_install_dir}/bin/nim.exe" ]]; then
   err "nim binary not found after install (expected: ${nim_install_dir}/bin/nim)"

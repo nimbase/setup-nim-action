@@ -217,10 +217,11 @@ clue and installs deps with `clue install`. Both generate the same
 
 | Platform | Strategy |
 | --- | --- |
-| Linux x86_64 | Prebuilt `tar.xz` from `nim-lang.org` |
-| Linux arm64 | Build from source (`./build_all.sh`) |
-| macOS | Prebuilt `tar.xz` for the runner's architecture (arm64/x86_64) → Homebrew (exact match only) → source build |
-| Windows x86_64 | Prebuilt `.zip` from `nim-lang.org`, extracted with PowerShell |
+| Linux x86_64 | `nim-prebuilts` `tar.xz` → `nim-lang.org` `tar.xz` |
+| Linux arm64 | `nim-prebuilts` `linux_arm64.tar.xz` → source build (`./build_all.sh`) |
+| macOS | `nim-prebuilts` `tar.xz` → `nim-lang.org` `tar.xz` → Homebrew (exact match only) → source build |
+| Windows x86_64 | `nim-prebuilts` `windows_x64.zip` → `nim-lang.org` `.zip` |
+| Windows arm64 | `nim-prebuilts` `windows_arm64.zip` (no upstream equivalent) |
 
 `stable` is resolved from `nim-lang.org/channels/stable`; version ranges are
 resolved with `git ls-remote --tags` + `sort -V` (no `jq`, no API rate limits).

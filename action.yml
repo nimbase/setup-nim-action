@@ -1,8 +1,8 @@
 name: 'Setup Nim environment'
 description: >-
-  Set up a Nim environment and add it to the PATH. Prefers prebuilt binaries
-  from nim-lang.org, falls back to Homebrew (macOS) and builds from source
-  when no prebuilt is available.
+  Set up a Nim environment and add it to the PATH. Prefers community prebuilt
+  binaries (nimbase/nim-prebuilts, then nim-lang.org), falls back to Homebrew
+  (macOS) and builds from source when no prebuilt is available.
 author: 'nimbase'
 branding:
   icon: 'code'

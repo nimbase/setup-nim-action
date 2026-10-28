@@ -29,18 +29,14 @@ on:
         default: ''
   push:
     paths-ignore:
-      - '**/*.md'
-      - '.gitignore'
-      - '**/.gitignore'
-      - '.*'
-      - '**/.*'
+      - LICENSE
+      - README.*
+      - examples
   pull_request:
     paths-ignore:
-      - '**/*.md'
-      - '.gitignore'
-      - '**/.gitignore'
-      - '.*'
-      - '**/.*'
+      - LICENSE
+      - README.*
+      - examples
 
 jobs:
   test:
