@@ -78,38 +78,56 @@ build_from_source() {
 # Community prebuilts covering all six targets (linux/macos/windows x x64/arm64).
 # Layout mirrors nim-lang.org, except Windows assets carry a windows_ prefix.
 prebuilt_asset() {
-  local asset=""
+  local ver="$1" asset=""
   case "$os" in
     Linux)
       case "$(uname -m)" in
-        x86_64 | amd64) asset="nim-${nim_version}-linux_x64.tar.xz" ;;
-        aarch64 | arm64) asset="nim-${nim_version}-linux_arm64.tar.xz" ;;
+        x86_64 | amd64) asset="nim-${ver}-linux_x64.tar.xz" ;;
+        aarch64 | arm64) asset="nim-${ver}-linux_arm64.tar.xz" ;;
       esac
       ;;
     macOS)
       case "$(uname -m)" in
-        arm64) asset="nim-${nim_version}-macosx_arm64.tar.xz" ;;
-        x86_64) asset="nim-${nim_version}-macosx_x64.tar.xz" ;;
+        arm64) asset="nim-${ver}-macosx_arm64.tar.xz" ;;
+        x86_64) asset="nim-${ver}-macosx_x64.tar.xz" ;;
       esac
       ;;
     Windows)
       case "$(uname -m)" in
-        x86_64 | amd64) asset="nim-${nim_version}-windows_x64.zip" ;;
-        aarch64 | arm64) asset="nim-${nim_version}-windows_arm64.zip" ;;
+        x86_64 | amd64) asset="nim-${ver}-windows_x64.zip" ;;
+        aarch64 | arm64) asset="nim-${ver}-windows_arm64.zip" ;;
       esac
       ;;
   esac
   echo "$asset"
 }
 
+latest_prebuilt_version() {
+  local final
+  final="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/nimbase/nim-prebuilts/releases/latest 2>/dev/null || true)"
+  echo "$final" | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | head -n 1
+}
+
 download_from_prebuilts() {
-  local asset url
-  asset="$(prebuilt_asset)"
+  local asset url latest
+  asset="$(prebuilt_asset "$nim_version")"
   [[ -n "$asset" ]] || return 1
   url="https://github.com/nimbase/nim-prebuilts/releases/download/v${nim_version}/${asset}"
   if ! url_available "$url"; then
-    info "no nim-prebuilts asset for Nim ${nim_version} (${asset}); falling back"
-    return 1
+    info "no nim-prebuilts asset for Nim ${nim_version} (${asset}); trying latest prebuilt"
+    latest="$(latest_prebuilt_version)"
+    if [[ -z "$latest" || "$latest" == "$nim_version" ]]; then
+      info "no usable nim-prebuilts fallback; falling back"
+      return 1
+    fi
+    asset="$(prebuilt_asset "$latest")"
+    url="https://github.com/nimbase/nim-prebuilts/releases/download/v${latest}/${asset}"
+    if ! url_available "$url"; then
+      info "no nim-prebuilts asset for latest prebuilt ${latest} either; falling back"
+      return 1
+    fi
+    info "falling back to latest nim-prebuilts version ${latest} (requested ${nim_version})"
+    nim_version="$latest"
   fi
   case "$asset" in
     *.tar.xz)

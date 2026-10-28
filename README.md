@@ -215,8 +215,9 @@ the Nim compiler by both package managers.
 
 Nim is installed from [nimbase/nim-prebuilts](https://github.com/nimbase/nim-prebuilts),
 which publishes toolchains for all six targets on every `nim-lang/nim` release.
-If no prebuilt exists for the requested version, the action falls back through
-the chain below:
+If no prebuilt exists for the requested version, the action uses the latest
+available prebuilt instead (reported via the `nim-version` output). Only if that
+also fails does it fall back through the chain below:
 
 | Platform | Strategy |
 | --- | --- |
