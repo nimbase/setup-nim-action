@@ -3,17 +3,16 @@
 Set up Nim on GitHub Actions and ship it end-to-end: **test**, **document**, and
 **release** your Nim packages across platforms with a handful of lines.
 
-The repo bundles seven building blocks (each test/docs/release workflow has a
+The repo bundles six building blocks (each test/release workflow has a
 nimble variant and a clue variant that preinstalls the [clue](https://github.com/openpeeps/clue)
-package manager):
+package manager, plus a single docs workflow):
 
 | Block | What it does | Use it for |
 | --- | --- | --- |
 | [`action.yml`](action.yml) | Composite action: installs Nim (nim-prebuilts → upstream → Homebrew → source) and adds it to `PATH` | Any step that needs `nim`/`nimble` |
 | [`.github/workflows/test.yml`](.github/workflows/test.yml) | Reusable workflow (nimble): run your package's tests on an OS matrix | CI for nimble packages |
 | [`.github/workflows/test_clue.yml`](.github/workflows/test_clue.yml) | Reusable workflow (clue): preinstalls clue, runs `clue install`/`clue test` on an OS matrix | CI for clue packages |
-| [`.github/workflows/docs.yml`](.github/workflows/docs.yml) | Reusable workflow (nimble): generate `nim doc` HTML and deploy to GitHub Pages | Documentation hosting |
-| [`.github/workflows/docs_clue.yml`](.github/workflows/docs_clue.yml) | Reusable workflow (clue): deps via `clue install`, then the same `nim doc` → Pages flow | Documentation hosting with clue |
+| [`.github/workflows/docs.yml`](.github/workflows/docs.yml) | Reusable workflow: generate `nim doc` HTML and deploy to GitHub Pages | Documentation hosting |
 | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Reusable workflow (nimble): build binaries per OS/arch, package them and create a GitHub release | Cross-platform releases |
 | [`.github/workflows/release_clue.yml`](.github/workflows/release_clue.yml) | Reusable workflow (clue): same release flow, built with `clue build --release` | Cross-platform clue releases |
 
@@ -157,7 +156,7 @@ pass `release-tag: v1.2.3`.
 clue and runs `clue install` / `clue test`. Extra `test-flags` are forwarded to
 the Nim compiler by both package managers.
 
-## Inputs (`docs.yml` and `docs_clue.yml`)
+## Inputs (`docs.yml`)
 
 | Input | Default | Description |
 | --- | --- | --- |
@@ -168,9 +167,8 @@ the Nim compiler by both package managers.
 | `deploy` | `true` | Push docs to `publish-branch` |
 | `publish-branch` | `gh-pages` | Branch docs are deployed to |
 
-`docs.yml` installs deps with `nimble install -Y`; `docs_clue.yml` preinstalls
-clue and installs deps with `clue install`. Both generate the same
-`nim doc` HTML and deploy to Pages.
+`docs.yml` installs deps with `nimble install -Y`, generates
+`nim doc` HTML and deploys to Pages.
 
 ## Inputs (`release.yml` and `release_clue.yml`)
 
