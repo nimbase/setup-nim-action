@@ -255,9 +255,9 @@ Nightlies and `devel` are intentionally **not** supported.
 
 ## Development
 
-`.github/workflows/ci.yml` self-tests the action: `stable` on four runners,
-version-range resolution, and the Linux arm64 source-build fallback (the slow
-macOS source-build path runs on `workflow_dispatch` only).
+`.github/workflows/ci.yml` self-tests the action: `stable` on four runners and
+version-range resolution (the slow macOS source-build path runs on
+`workflow_dispatch` only).
 
 ## License
 

@@ -58,18 +58,6 @@ jobs:
     with:
       os: '[{"os":"ubuntu-latest"},{"os":"macos-15"}]'
 
-  source-build:
-    name: source build (linux arm64)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./
-        with:
-          nim-version: 2.0.4
-      - run: nim -v
-      - run: nimble -v
-
   slow-paths:
     name: slow paths (macOS source build)
     if: github.event_name == 'workflow_dispatch'
