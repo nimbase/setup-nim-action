@@ -75,70 +75,108 @@ build_from_source() {
   move_nim_compiler "$src_dir" "$nim_install_dir"
 }
 
-# Community prebuilts covering all six targets (linux/macos/windows x x64/arm64).
-# Layout mirrors nim-lang.org, except Windows assets carry a windows_ prefix.
-prebuilt_asset() {
-  local ver="$1" asset=""
+# releases.json mirror (nimbase/nim-prebuilts `latest` release, byte-copy of
+# https://nim-lang.org/releases.json). Always prefer `github_url` (GitHub) over
+# `nimlang_url` for reliability.
+MIRROR_URL="https://github.com/nimbase/nim-prebuilts/releases/download/latest/releases.json"
+UPSTREAM_URL="https://nim-lang.org/releases.json"
+
+# Map host to releases.json platform key. Empty means "not built upstream"
+# (notably Windows arm64).
+releases_key() {
+  local key=""
   case "$os" in
     Linux)
       case "$(uname -m)" in
-        x86_64 | amd64) asset="nim-${ver}-linux_x64.tar.xz" ;;
-        aarch64 | arm64) asset="nim-${ver}-linux_arm64.tar.xz" ;;
+        x86_64 | amd64) key="linux_x64" ;;
+        aarch64 | arm64) key="linux_arm64" ;;
       esac
       ;;
     macOS)
       case "$(uname -m)" in
-        arm64) asset="nim-${ver}-macosx_arm64.tar.xz" ;;
-        x86_64) asset="nim-${ver}-macosx_x64.tar.xz" ;;
+        arm64) key="macosx_arm64" ;;
+        x86_64) key="macosx_x64" ;;
       esac
       ;;
     Windows)
       case "$(uname -m)" in
-        x86_64 | amd64) asset="nim-${ver}-windows_x64.zip" ;;
-        aarch64 | arm64) asset="nim-${ver}-windows_arm64.zip" ;;
+        x86_64 | amd64) key="windows_x64" ;;
       esac
       ;;
   esac
-  echo "$asset"
+  echo "$key"
 }
 
-latest_prebuilt_version() {
-  local final
-  final="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/nimbase/nim-prebuilts/releases/latest 2>/dev/null || true)"
-  echo "$final" | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | head -n 1
+# Print "<github_url> <digest>" for version/key from a releases.json file.
+releases_entry() {
+  local json="$1" ver="$2" key="$3" py
+  py="$(command -v python3 || command -v python || true)"
+  [[ -n "$py" ]] || return 1
+  "$py" -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+e = d.get(sys.argv[2], {}).get(sys.argv[3], {})
+print(e.get('github_url', ''), e.get('digest', ''))
+" "$json" "$ver" "$key" 2>/dev/null
 }
 
-download_from_prebuilts() {
-  local asset url latest
-  asset="$(prebuilt_asset "$nim_version")"
-  [[ -n "$asset" ]] || return 1
-  url="https://github.com/nimbase/nim-prebuilts/releases/download/v${nim_version}/${asset}"
-  if ! url_available "$url"; then
-    info "no nim-prebuilts asset for Nim ${nim_version} (${asset}); trying latest prebuilt"
-    latest="$(latest_prebuilt_version)"
-    if [[ -z "$latest" || "$latest" == "$nim_version" ]]; then
-      info "no usable nim-prebuilts fallback; falling back"
-      return 1
-    fi
-    asset="$(prebuilt_asset "$latest")"
-    url="https://github.com/nimbase/nim-prebuilts/releases/download/v${latest}/${asset}"
-    if ! url_available "$url"; then
-      info "no nim-prebuilts asset for latest prebuilt ${latest} either; falling back"
-      return 1
-    fi
-    info "falling back to latest nim-prebuilts version ${latest} (requested ${nim_version})"
-    nim_version="$latest"
+verify_sha256() {
+  local file="$1" digest="$2" hex=""
+  hex="${digest#sha256:}"
+  [[ -n "$hex" && "$hex" != "$digest" ]] || return 0
+  if command -v sha256sum >/dev/null 2>&1; then
+    echo "${hex}  ${file}" | sha256sum -c - >/dev/null 2>&1
+  elif command -v shasum >/dev/null 2>&1; then
+    echo "${hex}  ${file}" | shasum -a 256 -c >/dev/null 2>&1
+  else
+    return 0
   fi
-  case "$asset" in
+}
+
+download_from_releases() {
+  local key tmp url digest
+  key="$(releases_key)"
+  [[ -n "$key" ]] || return 1
+  tmp="$(mktemp)"
+  if curl -fsSL "$MIRROR_URL" -o "$tmp" 2>/dev/null; then
+    info "using nim-prebuilts releases mirror"
+  elif curl -fsSL "$UPSTREAM_URL" -o "$tmp" 2>/dev/null; then
+    info "mirror unavailable, using nim-lang.org/releases.json"
+  else
+    rm -f "$tmp"
+    return 1
+  fi
+  read -r url digest < <(releases_entry "$tmp" "$nim_version" "$key" || true)
+  rm -f "$tmp"
+  [[ -n "$url" ]] || return 1
+  case "$url" in
     *.tar.xz)
-      download_and_extract_tarxz "$url" "nim.tar.xz"
+      info "downloading $url"
+      curl -fsSL "$url" -o nim.tar.xz
+      if [[ -n "$digest" ]] && ! verify_sha256 nim.tar.xz "$digest"; then
+        err "checksum mismatch for $url"
+        rm -f nim.tar.xz
+        return 1
+      fi
+      tar xf nim.tar.xz
+      rm -f nim.tar.xz
+      move_nim_compiler "nim-${nim_version}" "$nim_install_dir"
       ;;
     *.zip)
       info "downloading $url"
       curl -fsSL "$url" -o nim.zip
+      if [[ -n "$digest" ]] && ! verify_sha256 nim.zip "$digest"; then
+        err "checksum mismatch for $url"
+        rm -f nim.zip
+        return 1
+      fi
       powershell.exe -NoProfile -Command "Expand-Archive -Force -LiteralPath 'nim.zip' -DestinationPath '.'"
       rm -f nim.zip
       move_nim_compiler "nim-${nim_version}" "$nim_install_dir"
+      ;;
+    *)
+      return 1
       ;;
   esac
 }
@@ -286,7 +324,7 @@ fi
 
 info "installing Nim ${nim_version} (os = $os)"
 
-if ! download_from_prebuilts; then
+if ! download_from_releases; then
   case "$os" in
     Linux)
       case "$(uname -m)" in
