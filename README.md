@@ -213,35 +213,30 @@ the Nim compiler by both package managers.
 
 ## How Nim is installed
 
-Nim is installed from `github_url` entries in
-[`releases.json`](https://github.com/nimbase/nim-prebuilts/releases/download/latest/releases.json),
-mirrored weekly by [nimbase/nim-prebuilts](https://github.com/nimbase/nim-prebuilts)
-from `nim-lang.org/releases.json` (byte-copy, single evergreen `latest` release).
-GitHub links are used instead of `nim-lang.org/download` because they are more
-reliable. If the mirror is unreachable the action reads upstream
-`nim-lang.org/releases.json` directly; if a version/key has no `github_url`
-the action falls back through the chain below (exact version is always kept —
-never silently swapped):
+Nim is installed from [nimbase/nim-prebuilts](https://github.com/nimbase/nim-prebuilts),
+which publishes toolchains for all six targets on every built `nim-lang/nim`
+release (newest 5 kept). If no prebuilt exists for the requested version, the
+action uses the latest available prebuilt instead (reported via the
+`nim-version` output). Only if that also fails does it fall back through the
+chain below:
 
 | Platform | Strategy |
 | --- | --- |
-| Linux x86_64 | `github_url` `linux_x64.tar.xz` → `nim-lang.org` `tar.xz` |
-| Linux arm64 | `github_url` `linux_arm64.tar.xz` → source build (`./build_all.sh`) |
-| macOS | `github_url` `tar.xz` → `nim-lang.org` `tar.xz` → Homebrew (exact match only) → source build |
-| Windows x86_64 | `github_url` `windows_x64.zip` → `nim-lang.org` `.zip` |
-| Windows arm64 | No upstream build → `nim-lang.org` x64 `.zip` (emulated) |
+| Linux x86_64 | `nim-prebuilts` `tar.xz` → `nim-lang.org` `tar.xz` |
+| Linux arm64 | `nim-prebuilts` `linux_arm64.tar.xz` → source build (`./build_all.sh`) |
+| macOS | `nim-prebuilts` `tar.xz` → `nim-lang.org` `tar.xz` → Homebrew (exact match only) → source build |
+| Windows x86_64 | `nim-prebuilts` `windows_x64.zip` → `nim-lang.org` `.zip` |
+| Windows arm64 | `nim-prebuilts` `windows_arm64.zip` (no upstream equivalent) |
 
 `stable` is resolved from `nim-lang.org/channels/stable`; version ranges are
 resolved with `git ls-remote --tags` + `sort -V` (no `jq`, no API rate limits).
 Nightlies and `devel` are intentionally **not** supported.
 
 > **Prebuilt notes**: [nim-prebuilts](https://github.com/nimbase/nim-prebuilts)
-> mirrors `nim-lang.org/releases.json` weekly into a single `latest` release.
-> Installs use the `github_url` entries. Upstream ships `linux_x64/arm64`,
-> `macosx_x64/arm64` and `windows_x64` (no `windows_arm64`); a version/key with
-> no entry (e.g. `2.4.0` `linux_arm64` while builds roll out) falls back to
-> `nim-lang.org/download`, Homebrew (macOS exact match) or a source build.
-> Nightlies/devel are unsupported by design.
+> ships all six targets (Linux/macOS/Windows on x64/arm64) for each built Nim
+> version (newest 5 releases kept). On macOS, older versions without a prebuilt
+> fall back to Homebrew (only if it matches the exact version) or a source
+> build (~10–20 min). Nightlies/devel are unsupported by design.
 
 ## Notes
 
