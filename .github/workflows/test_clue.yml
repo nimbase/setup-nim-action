@@ -115,7 +115,11 @@ jobs:
           arch="${{ runner.arch }}"
           case "${os}" in
             Linux)
-              asset="clue_linux-x86_64"; ext="tar.gz"
+              case "${arch}" in
+                X64)   asset="clue_linux-x86_64"; ext="tar.gz" ;;
+                ARM64) asset="clue_linux-arm64";  ext="tar.gz" ;;
+                *)     echo "ERROR: unsupported Linux arch: ${arch}"; exit 1 ;;
+              esac
               ;;
             macOS)
               case "${arch}" in
@@ -125,7 +129,11 @@ jobs:
               esac
               ;;
             Windows)
-              asset="clue_windows-x86_64"; ext="zip"
+              case "${arch}" in
+                X64)   asset="clue_windows-x86_64"; ext="zip" ;;
+                ARM64) asset="clue_windows-arm64";  ext="zip" ;;
+                *)     echo "ERROR: unsupported Windows arch: ${arch}"; exit 1 ;;
+              esac
               ;;
             *)
               echo "ERROR: unsupported os: ${os}"; exit 1
