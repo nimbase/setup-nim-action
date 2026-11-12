@@ -22,6 +22,10 @@ on:
         description: 'Optional command run before generating the docs (e.g. install extra tools).'
         type: string
         default: ''
+      pre-install-command:
+        description: 'Optional command run before installing the package (e.g. install a C dependency).'
+        type: string
+        default: ''
       deploy:
         description: 'Deploy the generated docs to the publish branch.'
         type: boolean
@@ -42,6 +46,11 @@ jobs:
       - uses: $/
         with:
           nim-version: ${{ inputs.nim-version }}
+
+      - name: Pre-install
+        if: inputs.pre-install-command != ''
+        shell: bash
+        run: ${{ inputs.pre-install-command }}
 
       - name: Install dependencies
         shell: bash
